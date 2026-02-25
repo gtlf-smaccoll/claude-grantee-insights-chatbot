@@ -95,18 +95,24 @@ export async function POST(req: Request) {
   }
 
   try {
+    console.log("========== STARTING MAIN TRY BLOCK ==========");
     console.log("Building system prompt...");
     const systemPrompt = buildSystemPrompt(registry, scopedGrantRefs) + retrievedContext;
     console.log(`System prompt built successfully. Length: ${systemPrompt.length} chars`);
 
+    console.log("Checking ANTHROPIC_API_KEY...");
     const apiKey = process.env.ANTHROPIC_API_KEY;
+    console.log(`API Key exists: ${!!apiKey}`);
+
     if (!apiKey) {
+      console.error("ANTHROPIC_API_KEY is not configured!");
       return new Response(
         JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
+    console.log("Creating Anthropic client...");
     // Explicit baseURL + apiKey + headers to override any shell env interference
     const anthropic = createAnthropic({
       baseURL: "https://api.anthropic.com/v1",
@@ -115,6 +121,7 @@ export async function POST(req: Request) {
         "x-api-key": apiKey,
       },
     });
+    console.log("Anthropic client created successfully");
 
     console.log("Converting messages to model format...");
     const modelMessages = await convertToModelMessages(messages);
@@ -126,6 +133,7 @@ export async function POST(req: Request) {
       system: systemPrompt,
       messages: modelMessages,
     });
+    console.log("streamText() returned result object");
 
     console.log("Converting result to stream response...");
     const response = result.toUIMessageStreamResponse();
