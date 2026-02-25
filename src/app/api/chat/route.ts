@@ -23,9 +23,25 @@ export async function POST(req: Request) {
 
     // Filter registry to scoped grants if provided
     if (scopedGrantRefs && scopedGrantRefs.length > 0) {
+      const filteredGrants = registry.grants.filter((g) => scopedGrantRefs.includes(g.ref));
+
+      // Rebuild portfolio_summary for scoped grants
+      const scopedSummary = {
+        total_grants: filteredGrants.length,
+        total_invested: filteredGrants.reduce((sum, g) => sum + (g.amount || 0), 0),
+        countries: Array.from(new Set(filteredGrants.map(g => g.country))),
+        active_grants: filteredGrants.filter(g => g.active).length,
+        rfp_cohorts: Array.from(new Set(filteredGrants.map(g => g.rfp).filter(Boolean))),
+        portfolio_types: filteredGrants.reduce((acc, g) => {
+          acc[g.portfolio_type] = (acc[g.portfolio_type] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>),
+      };
+
       registry = {
         ...registry,
-        grants: registry.grants.filter((g) => scopedGrantRefs.includes(g.ref)),
+        grants: filteredGrants,
+        portfolio_summary: scopedSummary,
       };
     }
   } catch (error: unknown) {
@@ -69,30 +85,41 @@ export async function POST(req: Request) {
     }
   }
 
-  const systemPrompt = buildSystemPrompt(registry, scopedGrantRefs) + retrievedContext;
+  try {
+    const systemPrompt = buildSystemPrompt(registry, scopedGrantRefs) + retrievedContext;
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Explicit baseURL + apiKey + headers to override any shell env interference
+    const anthropic = createAnthropic({
+      baseURL: "https://api.anthropic.com/v1",
+      apiKey,
+      headers: {
+        "x-api-key": apiKey,
+      },
+    });
+
+    const modelMessages = await convertToModelMessages(messages);
+
+    const result = streamText({
+      model: anthropic("claude-sonnet-4-20250514"),
+      system: systemPrompt,
+      messages: modelMessages,
+    });
+
+    return result.toUIMessageStreamResponse();
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    console.error("Chat API error:", err.message, error);
     return new Response(
-      JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }),
+      JSON.stringify({ error: `Chat failed: ${err.message || String(error)}` }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
-
-  // Explicit baseURL + apiKey + headers to override any shell env interference
-  const anthropic = createAnthropic({
-    baseURL: "https://api.anthropic.com/v1",
-    apiKey,
-    headers: {
-      "x-api-key": apiKey,
-    },
-  });
-
-  const result = streamText({
-    model: anthropic("claude-sonnet-4-20250514"),
-    system: systemPrompt,
-    messages: await convertToModelMessages(messages),
-  });
-
-  return result.toUIMessageStreamResponse();
 }
