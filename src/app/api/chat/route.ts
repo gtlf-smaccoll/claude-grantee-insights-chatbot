@@ -101,11 +101,18 @@ export async function POST(req: Request) {
     console.log(`System prompt built successfully. Length: ${systemPrompt.length} chars`);
 
     console.log("Checking ANTHROPIC_API_KEY...");
+    console.log("All environment variables starting with ANTHROPIC:",
+      Object.keys(process.env).filter(k => k.startsWith('ANTHROPIC')));
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     console.log(`API Key exists: ${!!apiKey}`);
+    if (apiKey) {
+      console.log(`API Key length: ${apiKey.length}, starts with: ${apiKey.substring(0, 20)}`);
+    }
 
     if (!apiKey) {
       console.error("ANTHROPIC_API_KEY is not configured!");
+      console.error("Available env vars:", Object.keys(process.env).slice(0, 20));
       return new Response(
         JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
