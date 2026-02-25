@@ -1,0 +1,149 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { CondensedGrant } from "@/types/grants";
+import FilterPanel from "./FilterPanel";
+
+interface GrantSidebarProps {
+  grants: CondensedGrant[];
+  onSelectGrant: (grant: CondensedGrant) => void;
+  selectedGrantRef?: string;
+  isLoadingGrant?: boolean;
+}
+
+export default function GrantSidebar({
+  grants,
+  onSelectGrant,
+  selectedGrantRef,
+  isLoadingGrant = false,
+}: GrantSidebarProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<{
+    country?: string;
+    rfp?: string;
+    intervention?: string;
+    active?: boolean;
+  }>({});
+
+  // Compute filtered list
+  const filteredGrants = useMemo(() => {
+    let result = grants;
+
+    // Filter by search (name or title)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (grant) =>
+          grant.name.toLowerCase().includes(query) ||
+          grant.title.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by country
+    if (filters.country) {
+      result = result.filter((grant) => grant.country === filters.country);
+    }
+
+    // Filter by RFP
+    if (filters.rfp) {
+      result = result.filter((grant) => grant.rfp === filters.rfp);
+    }
+
+    // Filter by intervention
+    if (filters.intervention) {
+      result = result.filter(
+        (grant) => grant.intervention === filters.intervention
+      );
+    }
+
+    // Filter by active status
+    if (filters.active === true) {
+      result = result.filter((grant) => grant.active);
+    }
+
+    return result;
+  }, [grants, searchQuery, filters]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleResetSearch = () => {
+    setSearchQuery("");
+  };
+
+  return (
+    <aside className="hidden lg:flex lg:w-72 flex-col border-r border-gray-700 bg-gray-950 min-h-screen">
+      {/* Header */}
+      <div className="px-4 py-4 border-b border-gray-700">
+        <h1 className="text-sm font-semibold text-gray-100">
+          Grant Portfolio
+        </h1>
+        <p className="text-xs text-gray-500">150 grants</p>
+      </div>
+
+      {/* Search input */}
+      <div className="px-4 py-3 border-b border-gray-700">
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="Search grants..."
+            className="w-full text-xs rounded border border-gray-600 bg-gray-800 text-gray-100 placeholder-gray-500 px-3 py-2 focus:border-gitlab-orange focus:outline-none focus:ring-1 focus:ring-gitlab-orange"
+          />
+          {searchQuery && (
+            <button
+              onClick={handleResetSearch}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-400"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filter panel */}
+      <FilterPanel
+        grants={grants}
+        filters={filters}
+        onFilterChange={setFilters}
+        resultCount={filteredGrants.length}
+      />
+
+      {/* Grants list */}
+      <div className="flex-1 overflow-y-auto">
+        {filteredGrants.length === 0 ? (
+          <div className="px-4 py-8 text-center">
+            <p className="text-xs text-gray-500">No grants found</p>
+          </div>
+        ) : (
+          <div className="space-y-1 p-2">
+            {filteredGrants.map((grant) => (
+              <button
+                key={grant.ref}
+                onClick={() => onSelectGrant(grant)}
+                disabled={isLoadingGrant && selectedGrantRef === grant.ref}
+                className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
+                  selectedGrantRef === grant.ref
+                    ? "bg-gitlab-orange text-white"
+                    : "hover:bg-gray-800 text-gray-300 hover:text-gray-100"
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <div className="font-medium truncate">{grant.name}</div>
+                <div className="text-gray-500 text-xs truncate">
+                  {grant.ref} • {grant.country}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer with user info */}
+      <div className="px-4 py-3 border-t border-gray-700">
+        <p className="text-xs text-gray-500 truncate">Grants Index</p>
+      </div>
+    </aside>
+  );
+}
