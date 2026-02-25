@@ -101,13 +101,26 @@ export async function POST(req: Request) {
     console.log(`System prompt built successfully. Length: ${systemPrompt.length} chars`);
 
     console.log("Checking ANTHROPIC_API_KEY...");
-    console.log("All environment variables starting with ANTHROPIC:",
-      Object.keys(process.env).filter(k => k.startsWith('ANTHROPIC')));
+    const anthropicKeys = Object.keys(process.env).filter(k => k.startsWith('ANTHROPIC'));
+    console.log("All ANTHROPIC env vars:", anthropicKeys);
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
+    console.log(`API Key value type: ${typeof apiKey}`);
+    console.log(`API Key value: "${apiKey}"`);
     console.log(`API Key exists: ${!!apiKey}`);
-    if (apiKey) {
+
+    // Try accessing it directly
+    if (typeof apiKey === 'string' && apiKey.length > 0) {
       console.log(`API Key length: ${apiKey.length}, starts with: ${apiKey.substring(0, 20)}`);
+    } else if (apiKey === undefined) {
+      console.error("ANTHROPIC_API_KEY is undefined!");
+      // Check if the key itself exists in process.env
+      console.log("Keys in process.env:", Object.keys(process.env).filter(k => k.includes('ANTHROPIC')));
+      for (const key of anthropicKeys) {
+        console.log(`  ${key} = ${process.env[key]}`);
+      }
+    } else if (apiKey === '') {
+      console.error("ANTHROPIC_API_KEY is an empty string!");
     }
 
     if (!apiKey) {
