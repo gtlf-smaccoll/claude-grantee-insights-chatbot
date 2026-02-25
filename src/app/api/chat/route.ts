@@ -95,7 +95,9 @@ export async function POST(req: Request) {
   }
 
   try {
+    console.log("Building system prompt...");
     const systemPrompt = buildSystemPrompt(registry, scopedGrantRefs) + retrievedContext;
+    console.log(`System prompt built successfully. Length: ${systemPrompt.length} chars`);
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -114,20 +116,34 @@ export async function POST(req: Request) {
       },
     });
 
+    console.log("Converting messages to model format...");
     const modelMessages = await convertToModelMessages(messages);
+    console.log(`Messages converted successfully. Count: ${modelMessages.length}`);
 
+    console.log("Calling streamText with Claude Sonnet...");
     const result = streamText({
       model: anthropic("claude-sonnet-4-20250514"),
       system: systemPrompt,
       messages: modelMessages,
     });
 
-    return result.toUIMessageStreamResponse();
+    console.log("Converting result to stream response...");
+    const response = result.toUIMessageStreamResponse();
+    console.log("Stream response created successfully");
+    return response;
   } catch (error: unknown) {
-    const err = error as { message?: string };
-    console.error("Chat API error:", err.message, error);
+    const err = error as { message?: string; stack?: string };
+    const errorMsg = err.message || String(error);
+    const errorStack = err.stack || "No stack trace";
+
+    console.error("=== CHAT API ERROR ===");
+    console.error("Message:", errorMsg);
+    console.error("Full error:", error);
+    console.error("Stack:", errorStack);
+    console.error("=======================");
+
     return new Response(
-      JSON.stringify({ error: `Chat failed: ${err.message || String(error)}` }),
+      JSON.stringify({ error: `Chat failed: ${errorMsg}` }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
