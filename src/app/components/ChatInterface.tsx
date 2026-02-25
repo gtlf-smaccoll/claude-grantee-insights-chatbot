@@ -17,14 +17,15 @@ export default function ChatInterface({
   scopedGrantRefs,
   onClearScope,
 }: ChatInterfaceProps) {
-  const { messages, setMessages, status, error } = useChat();
+  const [messages, setMessages] = useState<UIMessage[]>([]);
   const [input, setInput] = useState("");
   const [isCustomLoading, setIsCustomLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const isLoading = isCustomLoading || status === "submitted" || status === "streaming";
+  const isLoading = isCustomLoading;
 
   // Get scope labels for display
   const scopeLabel = scopedGrants ? `Analyzing ${scopedGrants.length} grant${scopedGrants.length === 1 ? "" : "s"}` : null;
@@ -99,7 +100,9 @@ export default function ChatInterface({
       ]);
     } catch (err) {
       if (!(err instanceof Error && err.name === "AbortError")) {
+        const errorMsg = err instanceof Error ? err.message : "Failed to send message";
         console.error("Failed to send message:", err);
+        setApiError(errorMsg);
       }
     } finally {
       setIsCustomLoading(false);
@@ -160,9 +163,9 @@ export default function ChatInterface({
             )}
           </div>
         )}
-        {error && (
+        {apiError && (
           <div className="max-w-3xl mx-auto mt-4 p-3 rounded-lg bg-red-900/30 border border-red-800 text-red-300 text-sm">
-            {error.message || "An error occurred. Please try again."}
+            {apiError}
           </div>
         )}
       </div>
