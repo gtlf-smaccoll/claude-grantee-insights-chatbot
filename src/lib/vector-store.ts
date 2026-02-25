@@ -162,8 +162,10 @@ function buildPineconeFilter(
   for (const [key, value] of Object.entries(filters)) {
     if (Array.isArray(value)) {
       conditions[key] = { $in: value };
+      console.log(`Building Pinecone filter: ${key} $in [${value.join(", ")}]`);
     } else {
       conditions[key] = { $eq: value };
+      console.log(`Building Pinecone filter: ${key} = ${value}`);
     }
   }
   return conditions;

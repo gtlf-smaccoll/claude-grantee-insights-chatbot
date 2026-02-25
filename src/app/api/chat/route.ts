@@ -23,7 +23,16 @@ export async function POST(req: Request) {
 
     // Filter registry to scoped grants if provided
     if (scopedGrantRefs && scopedGrantRefs.length > 0) {
+      console.log(`Filtering registry: scoped refs = [${scopedGrantRefs.join(", ")}]`);
+      console.log(`Total grants before filter: ${registry.grants.length}`);
+
       const filteredGrants = registry.grants.filter((g) => scopedGrantRefs.includes(g.ref));
+      console.log(`Total grants after filter: ${filteredGrants.length}`);
+
+      if (filteredGrants.length === 0) {
+        console.warn(`WARNING: No grants matched the scoped refs!`);
+        console.log(`Available refs in registry: [${registry.grants.map(g => g.ref).join(", ")}]`);
+      }
 
       // Rebuild portfolio_summary for scoped grants
       const scopedSummary = {

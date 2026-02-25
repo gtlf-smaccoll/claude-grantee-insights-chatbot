@@ -33,6 +33,7 @@ export async function retrieveContext(
   const filters: Record<string, string | string[]> = {};
   if (options?.referenceNumbers && options.referenceNumbers.length > 0) {
     filters.reference_number = options.referenceNumbers;
+    console.log("Retrieval: Filtering by referenceNumbers:", options.referenceNumbers);
   } else if (options?.referenceNumber) {
     filters.reference_number = options.referenceNumber;
   }
