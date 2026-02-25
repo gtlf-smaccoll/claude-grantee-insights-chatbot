@@ -1,11 +1,27 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { GrantRecord } from "@/types/grants";
+import { DocumentType } from "@/types/documents";
 
 interface GrantProfileProps {
   grant: GrantRecord | null;
   onClose: () => void;
 }
+
+interface GrantDocument {
+  source_file: string;
+  drive_url: string;
+  document_type: DocumentType;
+}
+
+const documentTypeLabels: Record<DocumentType, string> = {
+  grant_description: "Grant Description",
+  midpoint_checkin_transcript: "Midpoint Check-in Transcript",
+  midpoint_survey: "Midpoint Survey",
+  impact_survey: "Annual Impact Survey",
+  closeout_transcript: "Closeout Transcript",
+};
 
 function formatNumber(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
@@ -54,6 +70,34 @@ function Section({
 }
 
 export default function GrantProfile({ grant, onClose }: GrantProfileProps) {
+  const [documents, setDocuments] = useState<GrantDocument[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+
+  // Fetch documents when grant changes
+  useEffect(() => {
+    if (!grant) {
+      setDocuments([]);
+      return;
+    }
+
+    const fetchDocuments = async () => {
+      setLoadingDocs(true);
+      try {
+        const response = await fetch(`/api/grants/${grant.reference_number}/documents`);
+        if (response.ok) {
+          const data = await response.json();
+          setDocuments(data.documents || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch grant documents:", error);
+      } finally {
+        setLoadingDocs(false);
+      }
+    };
+
+    fetchDocuments();
+  }, [grant?.reference_number]);
+
   if (!grant) return null;
 
   return (
@@ -199,12 +243,58 @@ export default function GrantProfile({ grant, onClose }: GrantProfileProps) {
           </div>
         </Section>
 
-        {/* Document Availability */}
-        <Section title="Documents">
-          <p className="text-xs text-gray-500">
-            Document search coming in Phase 3b
-          </p>
-        </Section>
+        {/* Source Documents */}
+        {documents.length > 0 && (
+          <Section title="Source Documents">
+            <div className="space-y-2">
+              {documents.map((doc) => (
+                <a
+                  key={doc.source_file}
+                  href={doc.drive_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-2 p-2 rounded hover:bg-gray-800/50 transition-colors group"
+                >
+                  <svg
+                    className="w-4 h-4 text-gitlab-orange flex-shrink-0 mt-0.5 group-hover:text-orange-400"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-gitlab-orange group-hover:text-orange-400 truncate">
+                      {documentTypeLabels[doc.document_type]}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">
+                      {doc.source_file}
+                    </div>
+                  </div>
+                  <svg
+                    className="w-3 h-3 text-gray-600 flex-shrink-0 group-hover:text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </a>
+              ))}
+            </div>
+          </Section>
+        )}
+        {!loadingDocs && documents.length === 0 && (
+          <Section title="Source Documents">
+            <p className="text-xs text-gray-500">
+              No documents found in vector store
+            </p>
+          </Section>
+        )}
       </div>
     </div>
   );
