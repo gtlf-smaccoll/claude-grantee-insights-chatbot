@@ -74,19 +74,60 @@ export default function ChatInterface({
         throw new Error(`API error: ${response.status}`);
       }
 
-      // Handle streaming response
+      // Handle streaming response (SSE format)
       const reader = response.body?.getReader();
       if (!reader) throw new Error("No response body");
 
       let assistantMessage = "";
       const decoder = new TextDecoder();
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        assistantMessage += chunk;
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+
+        // Process complete lines
+        const lines = buffer.split("\n");
+        buffer = lines[lines.length - 1]; // Keep incomplete line in buffer
+
+        for (let i = 0; i < lines.length - 1; i++) {
+          const line = lines[i].trim();
+
+          // Skip empty lines and non-data lines
+          if (!line || !line.startsWith("data: ")) continue;
+
+          try {
+            // Extract JSON from "data: {...}"
+            const jsonStr = line.slice(6); // Remove "data: " prefix
+            if (!jsonStr) continue;
+
+            const data = JSON.parse(jsonStr);
+
+            // Extract text from text-delta events
+            if (data.type === "text-delta" && data.delta) {
+              assistantMessage += data.delta;
+            }
+          } catch (err) {
+            // Silently skip parsing errors
+            console.debug("Failed to parse SSE line:", line);
+          }
+        }
+      }
+
+      // Process any remaining buffer content
+      if (buffer.trim().startsWith("data: ")) {
+        try {
+          const jsonStr = buffer.trim().slice(6);
+          const data = JSON.parse(jsonStr);
+          if (data.type === "text-delta" && data.delta) {
+            assistantMessage += data.delta;
+          }
+        } catch (err) {
+          console.debug("Failed to parse final SSE line:", buffer);
+        }
       }
 
       // Add assistant message to history
