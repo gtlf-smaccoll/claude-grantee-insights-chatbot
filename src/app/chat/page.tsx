@@ -17,6 +17,8 @@ export default function ChatPage() {
   const [isLoadingRegistry, setIsLoadingRegistry] = useState(true);
   const [isLoadingGrant, setIsLoadingGrant] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scopedGrants, setScopedGrants] = useState<CondensedGrant[] | null>(null);
+  const [scopedGrantRefs, setScopedGrantRefs] = useState<string[] | undefined>();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -71,6 +73,16 @@ export default function ChatPage() {
     setSelectedGrantRef(undefined);
   };
 
+  const handleApplyFiltersToChat = (grants: CondensedGrant[]) => {
+    setScopedGrants(grants);
+    setScopedGrantRefs(grants.map((g) => g.ref));
+  };
+
+  const handleClearScope = () => {
+    setScopedGrants(null);
+    setScopedGrantRefs(undefined);
+  };
+
   // Show loading state while session is loading
   if (status === "loading") {
     return (
@@ -89,6 +101,7 @@ export default function ChatPage() {
           <GrantSidebar
             grants={grantRegistry.grants}
             onSelectGrant={handleSelectGrant}
+            onApplyFiltersToChat={handleApplyFiltersToChat}
             selectedGrantRef={selectedGrantRef}
             isLoadingGrant={isLoadingGrant}
           />
@@ -96,7 +109,11 @@ export default function ChatPage() {
 
         {/* Main chat area */}
         <main className="flex-1 flex flex-col min-w-0">
-          <ChatInterface />
+          <ChatInterface
+            scopedGrants={scopedGrants}
+            scopedGrantRefs={scopedGrantRefs}
+            onClearScope={handleClearScope}
+          />
         </main>
 
         {/* Grant profile overlay */}

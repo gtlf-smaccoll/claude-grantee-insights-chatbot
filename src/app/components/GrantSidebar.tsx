@@ -7,6 +7,7 @@ import FilterPanel from "./FilterPanel";
 interface GrantSidebarProps {
   grants: CondensedGrant[];
   onSelectGrant: (grant: CondensedGrant) => void;
+  onApplyFiltersToChat?: (grants: CondensedGrant[]) => void;
   selectedGrantRef?: string;
   isLoadingGrant?: boolean;
 }
@@ -14,6 +15,7 @@ interface GrantSidebarProps {
 export default function GrantSidebar({
   grants,
   onSelectGrant,
+  onApplyFiltersToChat,
   selectedGrantRef,
   isLoadingGrant = false,
 }: GrantSidebarProps) {
@@ -106,8 +108,10 @@ export default function GrantSidebar({
       {/* Filter panel */}
       <FilterPanel
         grants={grants}
+        filteredGrants={filteredGrants}
         filters={filters}
         onFilterChange={setFilters}
+        onApplyToChat={onApplyFiltersToChat}
         resultCount={filteredGrants.length}
       />
 

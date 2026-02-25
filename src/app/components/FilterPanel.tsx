@@ -4,6 +4,7 @@ import { CondensedGrant } from "@/types/grants";
 
 interface FilterPanelProps {
   grants: CondensedGrant[];
+  filteredGrants: CondensedGrant[];
   filters: {
     country?: string;
     rfp?: string;
@@ -11,13 +12,16 @@ interface FilterPanelProps {
     active?: boolean;
   };
   onFilterChange: (filters: FilterPanelProps["filters"]) => void;
+  onApplyToChat?: (grants: CondensedGrant[]) => void;
   resultCount: number;
 }
 
 export default function FilterPanel({
   grants,
+  filteredGrants,
   filters,
   onFilterChange,
+  onApplyToChat,
   resultCount,
 }: FilterPanelProps) {
   // Extract unique values from grants
@@ -162,6 +166,17 @@ export default function FilterPanel({
           className="w-full text-xs text-gray-400 hover:text-gray-300 py-1 border border-gray-600 rounded hover:border-gray-500 transition-colors"
         >
           Reset filters
+        </button>
+      )}
+
+      {/* Apply to Chat button */}
+      {onApplyToChat && resultCount > 0 && (
+        <button
+          onClick={() => onApplyToChat(filteredGrants)}
+          className="w-full text-xs font-medium text-white bg-gitlab-orange hover:bg-orange-600 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={resultCount === grants.length && !filters.country && !filters.rfp && !filters.intervention && !filters.active}
+        >
+          Apply to Chat ({resultCount})
         </button>
       )}
     </div>

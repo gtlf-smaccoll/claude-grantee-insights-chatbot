@@ -21,6 +21,7 @@ export async function retrieveContext(
   query: string,
   options?: {
     referenceNumber?: string;
+    referenceNumbers?: string[];
     country?: string;
     rfp?: string;
     documentType?: string;
@@ -29,8 +30,12 @@ export async function retrieveContext(
   }
 ): Promise<RetrievalResult> {
   // Build metadata filters from options
-  const filters: Record<string, string> = {};
-  if (options?.referenceNumber) filters.reference_number = options.referenceNumber;
+  const filters: Record<string, string | string[]> = {};
+  if (options?.referenceNumbers && options.referenceNumbers.length > 0) {
+    filters.reference_number = options.referenceNumbers;
+  } else if (options?.referenceNumber) {
+    filters.reference_number = options.referenceNumber;
+  }
   if (options?.country) filters.grantee_country = options.country;
   if (options?.rfp) filters.rfp = options.rfp;
   if (options?.documentType) filters.document_type = options.documentType;

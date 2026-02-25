@@ -2,15 +2,32 @@
 
 import { useChat } from "@ai-sdk/react";
 import { useRef, useEffect, useState } from "react";
+import { UIMessage } from "ai";
+import { CondensedGrant } from "@/types/grants";
 import ChatMessage from "./ChatMessage";
 
-export default function ChatInterface() {
-  const { messages, sendMessage, status, error } = useChat();
+interface ChatInterfaceProps {
+  scopedGrants?: CondensedGrant[] | null;
+  scopedGrantRefs?: string[];
+  onClearScope?: () => void;
+}
+
+export default function ChatInterface({
+  scopedGrants,
+  scopedGrantRefs,
+  onClearScope,
+}: ChatInterfaceProps) {
+  const { messages, setMessages, status, error } = useChat();
   const [input, setInput] = useState("");
+  const [isCustomLoading, setIsCustomLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const isLoading = status === "submitted" || status === "streaming";
+  const isLoading = isCustomLoading || status === "submitted" || status === "streaming";
+
+  // Get scope labels for display
+  const scopeLabel = scopedGrants ? `Analyzing ${scopedGrants.length} grant${scopedGrants.length === 1 ? "" : "s"}` : null;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -22,11 +39,75 @@ export default function ChatInterface() {
     inputRef.current?.focus();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Custom message handler that includes scopedGrantRefs
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-    sendMessage({ text: input });
+
+    const userMessage: UIMessage = {
+      id: Date.now().toString(),
+      role: "user",
+      parts: [{ type: "text", text: input }],
+    };
+
+    // Add user message to history
+    setMessages([...messages, userMessage]);
     setInput("");
+    setIsCustomLoading(true);
+
+    // Create abort controller for this request
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...messages, userMessage],
+          scopedGrantRefs,
+        }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      let assistantMessage = "";
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        assistantMessage += chunk;
+      }
+
+      // Add assistant message to history
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          parts: [{ type: "text", text: assistantMessage }],
+        },
+      ]);
+    } catch (err) {
+      if (!(err instanceof Error && err.name === "AbortError")) {
+        console.error("Failed to send message:", err);
+      }
+    } finally {
+      setIsCustomLoading(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    handleSendMessage(e);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -38,6 +119,21 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Scope header */}
+      {scopeLabel && (
+        <div className="px-4 py-3 bg-gitlab-orange/10 border-b border-gitlab-orange/30 flex items-center justify-between gap-4">
+          <span className="text-xs font-medium text-gitlab-orange">{scopeLabel}</span>
+          {onClearScope && (
+            <button
+              onClick={onClearScope}
+              className="text-xs text-gitlab-orange hover:text-orange-400 underline"
+            >
+              Clear scope
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Messages area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
         {messages.length === 0 ? (

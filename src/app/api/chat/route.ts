@@ -14,12 +14,20 @@ export async function POST(req: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { messages }: { messages: UIMessage[] } = await req.json();
+  const { messages, scopedGrantRefs }: { messages: UIMessage[]; scopedGrantRefs?: string[] } = await req.json();
 
   // Load the grant registry (cached, refreshes hourly)
   let registry;
   try {
     registry = await getGrantRegistry();
+
+    // Filter registry to scoped grants if provided
+    if (scopedGrantRefs && scopedGrantRefs.length > 0) {
+      registry = {
+        ...registry,
+        grants: registry.grants.filter((g) => scopedGrantRefs.includes(g.ref)),
+      };
+    }
   } catch (error: unknown) {
     const err = error as { message?: string };
     console.error("Failed to load grant registry:", err.message);
@@ -47,7 +55,12 @@ export async function POST(req: Request) {
   let retrievedContext = "";
   if (userQuery && process.env.PINECONE_API_KEY) {
     try {
-      const retrieval = await retrieveContext(userQuery);
+      // Build retrieval options - if scoped, filter to those grants
+      const retrievalOptions = scopedGrantRefs?.length
+        ? { referenceNumbers: scopedGrantRefs }
+        : undefined;
+
+      const retrieval = await retrieveContext(userQuery, retrievalOptions);
       if (retrieval.chunks.length > 0) {
         retrievedContext = `\n\n## Retrieved Document Context\n\nThe following document excerpts are relevant to the user's question. Use these to provide specific, evidence-based answers with citations.\n\n${retrieval.formattedContext}`;
       }
@@ -56,7 +69,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const systemPrompt = buildSystemPrompt(registry) + retrievedContext;
+  const systemPrompt = buildSystemPrompt(registry, scopedGrantRefs) + retrievedContext;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

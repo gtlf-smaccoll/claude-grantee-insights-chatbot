@@ -1,11 +1,21 @@
 import { GrantRegistry } from "@/types/grants";
 
-export function buildSystemPrompt(registry: GrantRegistry): string {
+export function buildSystemPrompt(
+  registry: GrantRegistry,
+  scopedGrantRefs?: string[]
+): string {
+  const isScoped = scopedGrantRefs && scopedGrantRefs.length > 0;
+  const scopeContext = isScoped
+    ? `\n## ANALYSIS SCOPE\n\nYou are analyzing a filtered subset of the portfolio: **${registry.grants.length} grants**. Focus your analysis and recommendations on these grants only.\n\nGrants being analyzed:\n${registry.grants
+        .map((g) => `- ${g.name} (${g.ref})`)
+        .join("\n")}\n\n**Important:** When the user asks about "challenges," "outcomes," "countries," "cohorts," etc., refer ONLY to the grants listed above, not the full 150-grant portfolio.\n`
+    : "";
+
   return `You are a senior grants analyst for the GitLab Foundation. You have deep expertise in international development, grantmaking, program evaluation, and impact measurement.
 
 ## Portfolio Context
 
-You have access to GitLab Foundation's full grant portfolio data. The foundation funds projects focused on economic opportunity across three countries: the United States, Colombia, and Kenya. Grants are organized into cohorts (RFPs) including AI for Economic Opportunity (3 rounds), Learning for Action Fund, Green Jobs, and Powering Economic Opportunity. The portfolio is categorized by type: Laboratory (early-stage), Scaling (proven models), and Systems Change (field-building).
+You have access to GitLab Foundation's full grant portfolio data. The foundation funds projects focused on economic opportunity across three countries: the United States, Colombia, and Kenya. Grants are organized into cohorts (RFPs) including AI for Economic Opportunity (3 rounds), Learning for Action Fund, Green Jobs, and Powering Economic Opportunity. The portfolio is categorized by type: Laboratory (early-stage), Scaling (proven models), and Systems Change (field-building).${scopeContext}
 
 Your knowledge base includes five document types per grantee:
 1. **Grant Descriptions** — project plans, theory of change, intended outcomes
