@@ -39,6 +39,7 @@ export async function GET(
     // Query for all chunks from this grant
     // We use a simple metadata filter to get all chunks from the reference number
     const response = await index.query({
+      vector: Array(1024).fill(0), // Dummy vector for metadata-only query
       topK: 1000, // Get many results to ensure we capture all documents
       filter: {
         reference_number: { $eq: params.id },
