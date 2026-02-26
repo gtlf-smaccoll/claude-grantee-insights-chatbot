@@ -53,18 +53,18 @@ export default function GrantSidebar({
 
     // Filter by country
     if (filters.country) {
-      result = result.filter((grant) => grant.country === filters.country);
+      result = result.filter((grant) => grant.country.trim() === filters.country);
     }
 
     // Filter by RFP
     if (filters.rfp) {
-      result = result.filter((grant) => grant.rfp === filters.rfp);
+      result = result.filter((grant) => grant.rfp.trim() === filters.rfp);
     }
 
     // Filter by intervention
     if (filters.intervention) {
       result = result.filter(
-        (grant) => grant.intervention === filters.intervention
+        (grant) => grant.intervention.trim() === filters.intervention
       );
     }
 

@@ -26,15 +26,15 @@ export default function FilterPanel({
 }: FilterPanelProps) {
   // Extract unique values from grants
   const countries = Array.from(
-    new Set(grants.map((g) => g.country).filter(Boolean))
+    new Set(grants.map((g) => g.country.trim()).filter(Boolean))
   ).sort();
 
   const rfps = Array.from(
-    new Set(grants.map((g) => g.rfp).filter(Boolean))
+    new Set(grants.map((g) => g.rfp.trim()).filter(Boolean))
   ).sort();
 
   const interventions = Array.from(
-    new Set(grants.map((g) => g.intervention).filter(Boolean))
+    new Set(grants.map((g) => g.intervention.trim()).filter(Boolean))
   ).sort();
 
   const handleCountryChange = (value: string) => {
