@@ -192,8 +192,16 @@ export default function ChatPage() {
 
         {/* Main content area */}
         <main className="flex-1 flex flex-col min-w-0">
-          {/* Toolbar with dashboard toggle */}
-          <div className="flex items-center justify-end px-4 py-2 border-b border-gray-800 bg-gray-950 flex-shrink-0">
+          {/* Header with logo + dashboard toggle */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-950 flex-shrink-0">
+            <div className="flex items-center gap-2.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/gtlf-icon.svg" alt="GitLab Foundation" className="w-6 h-6" />
+              <h1 className="text-sm font-semibold text-gray-200 tracking-tight">
+                <span className="text-gitlab-orange">GitLab Foundation</span>{" "}
+                <span className="text-gray-400 font-normal">Grant Insight Generator</span>
+              </h1>
+            </div>
             <button
               onClick={() => setShowDashboard((prev) => !prev)}
               className="text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 border-gray-600 text-gray-400 hover:text-gray-200 hover:border-gray-500"

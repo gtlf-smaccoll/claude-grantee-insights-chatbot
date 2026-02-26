@@ -6,7 +6,7 @@ import AuthProvider from "./components/AuthProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "GitLab Foundation - Grant Insights",
+  title: "GitLab Foundation Grant Insight Generator",
   description: "AI-powered grant portfolio analysis for the GitLab Foundation",
 };
 

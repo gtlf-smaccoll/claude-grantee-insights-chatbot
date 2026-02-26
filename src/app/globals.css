@@ -2,7 +2,9 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --color-gitlab-orange: #fc6d26;
+  --color-gitlab-orange: #F96D26;
+  --color-gitlab-gold: #F9A026;
+  --color-gitlab-red: #DF4329;
   --color-gitlab-purple: #6b4fbb;
   --color-gitlab-dark: #171321;
 }

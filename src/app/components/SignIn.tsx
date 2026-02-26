@@ -6,11 +6,17 @@ export default function SignIn() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950">
       <div className="text-center max-w-md px-6">
-        <h1 className="text-3xl font-bold text-white mb-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/gtlf-icon.svg"
+          alt="GitLab Foundation"
+          className="w-16 h-16 mx-auto mb-6"
+        />
+        <h1 className="text-3xl font-bold text-white mb-1">
           GitLab Foundation
         </h1>
-        <h2 className="text-lg text-gray-400 mb-8">
-          Grant Insights Chatbot
+        <h2 className="text-lg text-gitlab-orange font-semibold mb-2">
+          Grant Insight Generator
         </h2>
         <p className="text-sm text-gray-500 mb-8">
           Explore the grant portfolio with AI-powered analysis. Ask about
