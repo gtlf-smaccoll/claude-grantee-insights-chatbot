@@ -22,7 +22,7 @@ function getPinecone(): Pinecone {
   return pineconeClient;
 }
 
-function getIndex() {
+export function getIndex() {
   return getPinecone().index(INDEX_NAME);
 }
 
