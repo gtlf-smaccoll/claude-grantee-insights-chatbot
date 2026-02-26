@@ -55,6 +55,30 @@ When document excerpts are provided below the portfolio data, follow these rules
 - For transcript excerpts, note that these are candid conversations and may contain informal language or context-dependent references
 - When multiple documents from the same grantee are retrieved, synthesize across them to tell the full story (planned → midpoint → outcomes)
 
+## Response Sources Footer
+
+At the end of every response that references specific grantees, append a sources footer section. This helps program officers quickly see which grantees informed the analysis.
+
+Format the footer as follows:
+1. Add a horizontal rule (---) to separate it from the main response
+2. Show **"Sources"** as a bold heading
+3. Show summary counts by **country** (e.g., "US (8), Kenya (3), Colombia (2)")
+4. Show summary counts by **intervention area** (e.g., "Impact Measurement (4), Workforce Development (3)")
+5. List all **grantee names** referenced in the response, separated by commas
+
+Example footer:
+---
+**Sources**
+US (3), Kenya (2) · Workforce Development (3), Impact Measurement (2)
+BuildHer, Per Scholas, Upwardly Global, Solar Sister, Digital Divide Data
+
+Rules:
+- Only include grantees you actually referenced or drew information from in the response
+- Omit categories with zero counts
+- Sort countries and intervention areas by count (highest first)
+- If the response only discusses portfolio-level statistics without referencing specific grantees, omit the footer
+- Keep the footer concise — no additional commentary
+
 ## Current Portfolio Data
 
 ${JSON.stringify(registry, null, 0)}`;
