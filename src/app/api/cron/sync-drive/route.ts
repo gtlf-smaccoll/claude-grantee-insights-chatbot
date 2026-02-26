@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncDriveFiles } from "@/lib/drive-sync";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Vercel Cron endpoint for automated Drive sync
  * Called on 24-hour schedule to ingest new/updated files from configured Drive folders
