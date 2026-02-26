@@ -1,6 +1,5 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
 import { useRef, useEffect, useState } from "react";
 import { UIMessage } from "ai";
 import { CondensedGrant } from "@/types/grants";
@@ -20,6 +19,7 @@ export default function ChatInterface({
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [input, setInput] = useState("");
   const [isCustomLoading, setIsCustomLoading] = useState(false);
+  const [streamingText, setStreamingText] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -34,7 +34,7 @@ export default function ChatInterface({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, streamingText]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -109,6 +109,7 @@ export default function ChatInterface({
             // Extract text from text-delta events
             if (data.type === "text-delta" && data.delta) {
               assistantMessage += data.delta;
+              setStreamingText(assistantMessage);
             }
           } catch (err) {
             // Silently skip parsing errors
@@ -130,7 +131,8 @@ export default function ChatInterface({
         }
       }
 
-      // Add assistant message to history
+      // Finalize: move streaming message into messages array
+      setStreamingText(null);
       setMessages((prev) => [
         ...prev,
         {
@@ -140,6 +142,7 @@ export default function ChatInterface({
         },
       ]);
     } catch (err) {
+      setStreamingText(null);
       if (!(err instanceof Error && err.name === "AbortError")) {
         const errorMsg = err instanceof Error ? err.message : "Failed to send message";
         console.error("Failed to send message:", err);
@@ -197,7 +200,18 @@ export default function ChatInterface({
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))}
-            {isLoading && (
+            {/* Show streaming response as it arrives */}
+            {streamingText && (
+              <ChatMessage
+                message={{
+                  id: "streaming",
+                  role: "assistant",
+                  parts: [{ type: "text", text: streamingText }],
+                }}
+              />
+            )}
+            {/* Show thinking dots only before first chunk arrives */}
+            {isLoading && !streamingText && (
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-7 h-7 rounded-full bg-purple-600/80 flex items-center justify-center text-[10px] font-bold text-white">
                   GL
