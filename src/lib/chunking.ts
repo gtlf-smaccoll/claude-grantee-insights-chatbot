@@ -508,7 +508,7 @@ function buildBaseMetadata(
     fiscal_year: grant?.fiscal_year ?? null,
 
     document_type: doc.documentType,
-    document_date: doc.file.modifiedTime,
+    document_date: doc.file.modifiedTime || new Date().toISOString(),
     source_file: doc.file.name,
     drive_url: doc.file.webViewLink ?? "",
 

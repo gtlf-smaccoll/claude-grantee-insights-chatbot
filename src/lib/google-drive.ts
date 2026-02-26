@@ -24,7 +24,7 @@ export async function listFilesInFolder(
     const response = await drive.files.list({
       q: `'${folderId}' in parents and trashed = false`,
       fields:
-        "nextPageToken, files(id, name, mimeType, modifiedTime, size, webViewLink)",
+        "nextPageToken, files(id, name, mimeType, modifiedTime, createdTime, size, webViewLink)",
       pageSize: 100,
       pageToken,
       supportsAllDrives: true,
@@ -32,11 +32,15 @@ export async function listFilesInFolder(
     });
 
     for (const file of response.data.files ?? []) {
+      // Use modifiedTime if available, fall back to createdTime, or use current timestamp
+      const timestamp =
+        file.modifiedTime || file.createdTime || new Date().toISOString();
+
       files.push({
         id: file.id!,
         name: file.name!,
         mimeType: file.mimeType!,
-        modifiedTime: file.modifiedTime!,
+        modifiedTime: timestamp,
         size: file.size ?? undefined,
         webViewLink: file.webViewLink ?? undefined,
       });

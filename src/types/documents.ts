@@ -40,7 +40,7 @@ export interface DriveFileInfo {
   id: string;
   name: string;
   mimeType: string;
-  modifiedTime: string;
+  modifiedTime?: string;  // Optional: fallback to createdTime or current timestamp
   size?: string;
   webViewLink?: string;
 }
@@ -100,6 +100,12 @@ export interface ChunkMetadata {
   people_served: number | null;
   cost_per_person: number | null;
   income_change_pct: number | null;
+
+  // Sync tracking (for Drive sync feature)
+  drive_file_id?: string;        // Google Drive file ID
+  drive_file_modified?: string;  // File's modifiedTime from Drive API
+  ingestion_timestamp?: number;  // Unix timestamp when ingested
+  sync_generation?: number;      // Incremental counter for sync runs (1, 2, 3...)
 }
 
 // Folder configuration for Drive ingestion
