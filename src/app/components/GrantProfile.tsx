@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GrantRecord } from "@/types/grants";
+import { GrantRecord, GrantSummaryCard } from "@/types/grants";
 import { DocumentType } from "@/types/documents";
 
 interface GrantProfileProps {
@@ -72,6 +72,9 @@ function Section({
 export default function GrantProfile({ grant, onClose }: GrantProfileProps) {
   const [documents, setDocuments] = useState<GrantDocument[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
+  const [summary, setSummary] = useState<GrantSummaryCard | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   // Fetch documents when grant changes
   useEffect(() => {
@@ -96,6 +99,39 @@ export default function GrantProfile({ grant, onClose }: GrantProfileProps) {
     };
 
     fetchDocuments();
+  }, [grant?.reference_number]);
+
+  // Fetch AI summary when grant changes
+  useEffect(() => {
+    if (!grant) {
+      setSummary(null);
+      setSummaryError(null);
+      return;
+    }
+
+    const fetchSummary = async () => {
+      setLoadingSummary(true);
+      setSummaryError(null);
+      try {
+        const response = await fetch(`/api/grants/${grant.reference_number}/summary`);
+        if (response.ok) {
+          const data = await response.json();
+          setSummary(data);
+        } else if (response.status === 503) {
+          // Pinecone or Anthropic not configured — silently skip
+          setSummary(null);
+        } else {
+          setSummaryError("Failed to load summary");
+        }
+      } catch (error) {
+        console.error("Failed to fetch grant summary:", error);
+        setSummaryError("Failed to load summary");
+      } finally {
+        setLoadingSummary(false);
+      }
+    };
+
+    fetchSummary();
   }, [grant?.reference_number]);
 
   if (!grant) return null;
@@ -123,6 +159,121 @@ export default function GrantProfile({ grant, onClose }: GrantProfileProps) {
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+        {/* AI Summary Card */}
+        {loadingSummary && (
+          <div className="py-4 border-b border-gray-700">
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-gray-300">AI Summary</h3>
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 bg-gitlab-orange rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 bg-gitlab-orange rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 bg-gitlab-orange rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+            <div className="animate-pulse space-y-3">
+              <div className="h-4 bg-gray-700 rounded w-3/4" />
+              <div className="h-3 bg-gray-700 rounded w-full" />
+              <div className="h-3 bg-gray-700 rounded w-5/6" />
+              <div className="space-y-2 mt-4">
+                <div className="h-3 bg-gray-700 rounded w-2/3" />
+                <div className="h-3 bg-gray-700 rounded w-1/2" />
+                <div className="h-3 bg-gray-700 rounded w-3/5" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {summary && !loadingSummary && (
+          <div className="py-4 border-b border-gray-700">
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-gray-300">AI Summary</h3>
+              {!summary.has_documents && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-yellow-900/30 text-yellow-400 rounded">
+                  Spreadsheet only
+                </span>
+              )}
+            </div>
+
+            {/* One-liner */}
+            <p className="text-sm text-gitlab-orange font-medium mb-3">
+              {summary.one_liner}
+            </p>
+
+            {/* Project Summary */}
+            <p className="text-xs text-gray-300 leading-relaxed mb-4">
+              {summary.project_summary}
+            </p>
+
+            {/* Key Findings */}
+            {summary.key_findings.length > 0 && (
+              <div className="mb-3">
+                <h4 className="text-xs font-semibold text-gray-400 mb-1.5">Key Findings</h4>
+                <ul className="space-y-1">
+                  {summary.key_findings.map((finding, i) => (
+                    <li key={i} className="text-xs text-gray-300 flex gap-2">
+                      <span className="text-gitlab-orange flex-shrink-0">•</span>
+                      <span>{finding}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Challenges */}
+            {summary.challenges.length > 0 && (
+              <div className="mb-3">
+                <h4 className="text-xs font-semibold text-gray-400 mb-1.5">Challenges</h4>
+                <ul className="space-y-1">
+                  {summary.challenges.map((challenge, i) => (
+                    <li key={i} className="text-xs text-gray-300 flex gap-2">
+                      <span className="text-red-400 flex-shrink-0">•</span>
+                      <span>{challenge}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Outcomes */}
+            {summary.outcomes_summary && (
+              <div className="mb-3">
+                <h4 className="text-xs font-semibold text-gray-400 mb-1.5">Outcomes</h4>
+                <p className="text-xs text-gray-300">{summary.outcomes_summary}</p>
+              </div>
+            )}
+
+            {/* Follow-on Plans */}
+            {summary.follow_on_plans && (
+              <div className="mb-3">
+                <h4 className="text-xs font-semibold text-gray-400 mb-1.5">What&apos;s Next</h4>
+                <p className="text-xs text-gray-300">{summary.follow_on_plans}</p>
+              </div>
+            )}
+
+            {/* Status + metadata footer */}
+            <div className="flex items-center gap-2 mt-2">
+              <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                summary.current_status === "Active"
+                  ? "bg-green-900/30 text-green-400"
+                  : "bg-gray-800 text-gray-400"
+              }`}>
+                {summary.current_status}
+              </span>
+              {summary.document_types_used.length > 0 && (
+                <span className="text-[10px] text-gray-600">
+                  Based on {summary.document_types_used.length} doc type{summary.document_types_used.length > 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {summaryError && !loadingSummary && (
+          <div className="py-3 border-b border-gray-700">
+            <p className="text-xs text-red-400/70">{summaryError}</p>
+          </div>
+        )}
+
         {/* Overview Section */}
         <Section title="Overview">
           <div className="space-y-2">

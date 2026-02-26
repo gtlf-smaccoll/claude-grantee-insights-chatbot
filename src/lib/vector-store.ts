@@ -1,5 +1,6 @@
 import { Pinecone, type SearchRecordsResponse } from "@pinecone-database/pinecone";
 import { DocumentChunk, ChunkMetadata } from "@/types/documents";
+import { GrantSummaryCard } from "@/types/grants";
 
 const INDEX_NAME = "gitlab-foundation-grants";
 
@@ -251,5 +252,107 @@ export async function deleteChunksByGrantee(
     console.warn(
       `Filter-based deletion failed for ${referenceNumber}; may need manual cleanup`
     );
+  }
+}
+
+// ============================================================
+// Grant Summary Card — cache in Pinecone
+// ============================================================
+
+/**
+ * Fetch a cached summary card from Pinecone for a grant.
+ * Uses the legacy query API with a dummy vector + metadata filter.
+ */
+export async function fetchSummaryCard(
+  referenceNumber: string
+): Promise<GrantSummaryCard | null> {
+  const index = getIndex();
+
+  const response = await index.query({
+    vector: Array(1024).fill(0),
+    topK: 1,
+    filter: {
+      record_type: { $eq: "summary_card" },
+      reference_number: { $eq: referenceNumber },
+    },
+    includeMetadata: true,
+    includeValues: false,
+  });
+
+  const match = response.matches?.[0];
+  if (!match?.metadata) return null;
+
+  const m = match.metadata as Record<string, unknown>;
+
+  return {
+    reference_number: (m.reference_number as string) ?? "",
+    grantee_name: (m.grantee_name as string) ?? "",
+    one_liner: (m.one_liner as string) ?? "",
+    project_summary: (m.project_summary as string) ?? "",
+    key_findings: safeParseJsonArray(m.key_findings_json as string),
+    challenges: safeParseJsonArray(m.challenges_json as string),
+    outcomes_summary: (m.outcomes_summary as string) ?? "",
+    current_status: (m.current_status as string) ?? "",
+    follow_on_plans: (m.follow_on_plans as string) ?? "",
+    metrics: {
+      grant_amount: (m.metric_grant_amount as number) ?? null,
+      people_served: (m.metric_people_served as number) ?? null,
+      roi: (m.metric_roi as number) ?? null,
+      income_change_pct: (m.metric_income_change_pct as number) ?? null,
+      cost_per_person: (m.metric_cost_per_person as number) ?? null,
+      co_investment: (m.metric_co_investment as number) ?? null,
+    },
+    generated_at: (m.generated_at as string) ?? "",
+    has_documents: (m.has_documents as boolean) ?? false,
+    document_types_used: safeParseJsonArray(m.document_types_used_json as string),
+  };
+}
+
+/**
+ * Store a summary card in Pinecone using integrated inference upsert.
+ * Uses deterministic ID so re-generation overwrites the previous card.
+ */
+export async function upsertSummaryCard(
+  summary: GrantSummaryCard,
+  textRepresentation: string
+): Promise<void> {
+  const index = getIndex();
+
+  await index.upsertRecords({
+    records: [
+      {
+        _id: `summary_card_${summary.reference_number}`,
+        text: textRepresentation.slice(0, 35000),
+        record_type: "summary_card",
+        reference_number: summary.reference_number,
+        grantee_name: summary.grantee_name,
+        one_liner: summary.one_liner,
+        project_summary: summary.project_summary,
+        key_findings_json: JSON.stringify(summary.key_findings),
+        challenges_json: JSON.stringify(summary.challenges),
+        outcomes_summary: summary.outcomes_summary,
+        current_status: summary.current_status,
+        follow_on_plans: summary.follow_on_plans,
+        metric_grant_amount: summary.metrics.grant_amount ?? 0,
+        metric_people_served: summary.metrics.people_served ?? 0,
+        metric_roi: summary.metrics.roi ?? 0,
+        metric_income_change_pct: summary.metrics.income_change_pct ?? 0,
+        metric_cost_per_person: summary.metrics.cost_per_person ?? 0,
+        metric_co_investment: summary.metrics.co_investment ?? 0,
+        generated_at: summary.generated_at,
+        has_documents: summary.has_documents,
+        document_types_used_json: JSON.stringify(summary.document_types_used),
+      },
+    ],
+  });
+}
+
+function safeParseJsonArray(value: string | undefined | null): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
 }

@@ -109,5 +109,29 @@ export interface GrantRegistry {
   last_updated: string;
 }
 
+// AI-generated summary card for a grant (cached in Pinecone)
+export interface GrantSummaryCard {
+  reference_number: string;
+  grantee_name: string;
+  one_liner: string;
+  project_summary: string;
+  key_findings: string[];
+  challenges: string[];
+  outcomes_summary: string;
+  current_status: string;
+  follow_on_plans: string;
+  metrics: {
+    grant_amount: number | null;
+    people_served: number | null;
+    roi: number | null;
+    income_change_pct: number | null;
+    cost_per_person: number | null;
+    co_investment: number | null;
+  };
+  generated_at: string;
+  has_documents: boolean;
+  document_types_used: string[];
+}
+
 // Column mapping from spreadsheet headers to our field names
 export type ColumnMapping = Record<string, keyof GrantRecord>;
