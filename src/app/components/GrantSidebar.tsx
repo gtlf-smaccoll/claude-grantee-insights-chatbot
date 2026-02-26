@@ -10,6 +10,11 @@ interface GrantSidebarProps {
   onApplyFiltersToChat?: (grants: CondensedGrant[]) => void;
   selectedGrantRef?: string;
   isLoadingGrant?: boolean;
+  isCompareMode?: boolean;
+  compareRefs?: string[];
+  onToggleCompareMode?: () => void;
+  onToggleCompareGrant?: (grant: CondensedGrant) => void;
+  onExecuteComparison?: () => void;
 }
 
 export default function GrantSidebar({
@@ -18,6 +23,11 @@ export default function GrantSidebar({
   onApplyFiltersToChat,
   selectedGrantRef,
   isLoadingGrant = false,
+  isCompareMode = false,
+  compareRefs = [],
+  onToggleCompareMode,
+  onToggleCompareGrant,
+  onExecuteComparison,
 }: GrantSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<{
@@ -78,10 +88,28 @@ export default function GrantSidebar({
     <aside className="hidden lg:flex lg:w-72 flex-col border-r border-gray-700 bg-gray-950 min-h-screen">
       {/* Header */}
       <div className="px-4 py-4 border-b border-gray-700">
-        <h1 className="text-sm font-semibold text-gray-100">
-          Grant Portfolio
-        </h1>
-        <p className="text-xs text-gray-500">150 grants</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-sm font-semibold text-gray-100">
+              {isCompareMode ? "Compare Grants" : "Grant Portfolio"}
+            </h1>
+            <p className="text-xs text-gray-500">
+              {isCompareMode
+                ? `${compareRefs.length} of 3 selected`
+                : `${grants.length} grants`}
+            </p>
+          </div>
+          <button
+            onClick={onToggleCompareMode}
+            className={`text-[10px] px-2 py-1 rounded border transition-colors ${
+              isCompareMode
+                ? "border-gitlab-orange text-gitlab-orange bg-gitlab-orange/10"
+                : "border-gray-600 text-gray-500 hover:text-gray-300 hover:border-gray-500"
+            }`}
+          >
+            {isCompareMode ? "Exit" : "Compare"}
+          </button>
+        </div>
       </div>
 
       {/* Search input */}
@@ -123,31 +151,116 @@ export default function GrantSidebar({
           </div>
         ) : (
           <div className="space-y-1 p-2">
-            {filteredGrants.map((grant) => (
-              <button
-                key={grant.ref}
-                onClick={() => onSelectGrant(grant)}
-                disabled={isLoadingGrant && selectedGrantRef === grant.ref}
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
-                  selectedGrantRef === grant.ref
-                    ? "bg-gitlab-orange text-white"
-                    : "hover:bg-gray-800 text-gray-300 hover:text-gray-100"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <div className="font-medium truncate">{grant.name}</div>
-                <div className="text-gray-500 text-xs truncate">
-                  {grant.ref} • {grant.country}
-                </div>
-              </button>
-            ))}
+            {filteredGrants.map((grant) => {
+              const isChecked = compareRefs.includes(grant.ref);
+              const isMaxed = compareRefs.length >= 3 && !isChecked;
+
+              if (isCompareMode) {
+                return (
+                  <button
+                    key={grant.ref}
+                    onClick={() => onToggleCompareGrant?.(grant)}
+                    disabled={isMaxed}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 ${
+                      isChecked
+                        ? "bg-gitlab-orange/10 border-l-2 border-gitlab-orange text-gray-100"
+                        : isMaxed
+                        ? "text-gray-600 cursor-not-allowed"
+                        : "hover:bg-gray-800 text-gray-300 hover:text-gray-100"
+                    }`}
+                  >
+                    <div
+                      className={`w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center ${
+                        isChecked
+                          ? "bg-gitlab-orange border-gitlab-orange"
+                          : isMaxed
+                          ? "border-gray-700 bg-gray-800"
+                          : "border-gray-500"
+                      }`}
+                    >
+                      {isChecked && (
+                        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{grant.name}</div>
+                      <div className="text-gray-500 text-xs truncate">
+                        {grant.ref} • {grant.country}
+                      </div>
+                    </div>
+                  </button>
+                );
+              }
+
+              return (
+                <button
+                  key={grant.ref}
+                  onClick={() => onSelectGrant(grant)}
+                  disabled={isLoadingGrant && selectedGrantRef === grant.ref}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
+                    selectedGrantRef === grant.ref
+                      ? "bg-gitlab-orange text-white"
+                      : "hover:bg-gray-800 text-gray-300 hover:text-gray-100"
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <div className="font-medium truncate">{grant.name}</div>
+                  <div className="text-gray-500 text-xs truncate">
+                    {grant.ref} • {grant.country}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Footer with user info */}
-      <div className="px-4 py-3 border-t border-gray-700">
-        <p className="text-xs text-gray-500 truncate">Grants Index</p>
-      </div>
+      {/* Footer */}
+      {isCompareMode ? (
+        <div className="px-4 py-3 border-t border-gray-700 space-y-2">
+          {compareRefs.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {compareRefs.map((ref) => {
+                const g = grants.find((gr) => gr.ref === ref);
+                return (
+                  <span
+                    key={ref}
+                    className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-gitlab-orange/15 text-gitlab-orange border border-gitlab-orange/30"
+                  >
+                    {g?.name?.slice(0, 15) || ref}
+                    <button
+                      onClick={() => onToggleCompareGrant?.(g || { ref } as CondensedGrant)}
+                      className="hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={onExecuteComparison}
+              disabled={compareRefs.length < 2}
+              className="flex-1 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors bg-gitlab-orange text-white hover:bg-gitlab-orange/90 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Compare ({compareRefs.length})
+            </button>
+            <button
+              onClick={onToggleCompareMode}
+              className="text-xs px-3 py-1.5 rounded-lg border border-gray-600 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="px-4 py-3 border-t border-gray-700">
+          <p className="text-xs text-gray-500 truncate">Grants Index</p>
+        </div>
+      )}
     </aside>
   );
 }

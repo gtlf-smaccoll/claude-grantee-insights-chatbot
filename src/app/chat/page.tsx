@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { GrantRegistry, GrantRecord, CondensedGrant } from "@/types/grants";
+import { GrantRegistry, GrantRecord, CondensedGrant, GrantSummaryCard } from "@/types/grants";
 import ChatInterface from "../components/ChatInterface";
 import GrantSidebar from "../components/GrantSidebar";
 import GrantProfile from "../components/GrantProfile";
 import PortfolioDashboard from "../components/PortfolioDashboard";
+import GrantComparison from "../components/GrantComparison";
 
 export default function ChatPage() {
   const { data: session, status } = useSession();
@@ -21,6 +22,13 @@ export default function ChatPage() {
   const [scopedGrants, setScopedGrants] = useState<CondensedGrant[] | null>(null);
   const [scopedGrantRefs, setScopedGrantRefs] = useState<string[] | undefined>();
   const [showDashboard, setShowDashboard] = useState(false);
+
+  // Compare mode state
+  const [isCompareMode, setIsCompareMode] = useState(false);
+  const [compareRefs, setCompareRefs] = useState<string[]>([]);
+  const [compareGrants, setCompareGrants] = useState<GrantRecord[]>([]);
+  const [compareSummaries, setCompareSummaries] = useState<(GrantSummaryCard | null)[]>([]);
+  const [isLoadingComparison, setIsLoadingComparison] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -85,6 +93,66 @@ export default function ChatPage() {
     setScopedGrantRefs(undefined);
   };
 
+  // Compare mode handlers
+  const handleToggleCompareMode = () => {
+    if (isCompareMode) {
+      setIsCompareMode(false);
+      setCompareRefs([]);
+      setCompareGrants([]);
+      setCompareSummaries([]);
+    } else {
+      setIsCompareMode(true);
+      handleCloseProfile();
+    }
+  };
+
+  const handleToggleCompareGrant = (grant: CondensedGrant) => {
+    setCompareRefs((prev) => {
+      if (prev.includes(grant.ref)) {
+        return prev.filter((r) => r !== grant.ref);
+      }
+      if (prev.length >= 3) return prev;
+      return [...prev, grant.ref];
+    });
+  };
+
+  const handleExecuteComparison = async () => {
+    if (compareRefs.length < 2) return;
+    setIsLoadingComparison(true);
+    setShowDashboard(false);
+
+    try {
+      const [grantResults, summaryResults] = await Promise.all([
+        Promise.all(
+          compareRefs.map((ref) =>
+            fetch(`/api/grants/${ref}`).then((r) => (r.ok ? r.json() as Promise<GrantRecord> : null))
+          )
+        ),
+        Promise.all(
+          compareRefs.map((ref) =>
+            fetch(`/api/grants/${ref}/summary`)
+              .then((r) => (r.ok ? r.json() as Promise<GrantSummaryCard> : null))
+              .catch(() => null)
+          )
+        ),
+      ]);
+
+      const validGrants = grantResults.filter((g): g is GrantRecord => g !== null);
+      setCompareGrants(validGrants);
+      setCompareSummaries(summaryResults);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Comparison failed");
+      console.error("Comparison fetch failed:", err);
+    } finally {
+      setIsLoadingComparison(false);
+    }
+  };
+
+  const handleCloseComparison = () => {
+    setCompareGrants([]);
+    setCompareSummaries([]);
+  };
+
   // Show loading state while session is loading
   if (status === "loading") {
     return (
@@ -106,6 +174,11 @@ export default function ChatPage() {
             onApplyFiltersToChat={handleApplyFiltersToChat}
             selectedGrantRef={selectedGrantRef}
             isLoadingGrant={isLoadingGrant}
+            isCompareMode={isCompareMode}
+            compareRefs={compareRefs}
+            onToggleCompareMode={handleToggleCompareMode}
+            onToggleCompareGrant={handleToggleCompareGrant}
+            onExecuteComparison={handleExecuteComparison}
           />
         )}
 
@@ -128,8 +201,8 @@ export default function ChatPage() {
             </button>
           </div>
 
-          {/* Chat (hidden when dashboard is open, but stays mounted to preserve state) */}
-          <div className={showDashboard ? "hidden" : "flex flex-col flex-1 min-h-0"}>
+          {/* Chat (hidden when dashboard or comparison is open, but stays mounted to preserve state) */}
+          <div className={showDashboard || compareGrants.length >= 2 || isLoadingComparison ? "hidden" : "flex flex-col flex-1 min-h-0"}>
             <ChatInterface
               scopedGrants={scopedGrants}
               scopedGrantRefs={scopedGrantRefs}
@@ -145,10 +218,22 @@ export default function ChatPage() {
               onClose={() => setShowDashboard(false)}
             />
           )}
+
+          {/* Comparison view */}
+          {(compareGrants.length >= 2 || isLoadingComparison) && !showDashboard && (
+            <GrantComparison
+              grants={compareGrants}
+              summaries={compareSummaries}
+              isLoading={isLoadingComparison}
+              onClose={handleCloseComparison}
+            />
+          )}
         </main>
 
-        {/* Grant profile overlay */}
-        <GrantProfile grant={selectedGrant} onClose={handleCloseProfile} />
+        {/* Grant profile overlay (hidden during comparison) */}
+        {compareGrants.length < 2 && !isLoadingComparison && (
+          <GrantProfile grant={selectedGrant} onClose={handleCloseProfile} />
+        )}
 
         {/* Error display */}
         {error && (
