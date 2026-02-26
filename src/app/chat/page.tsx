@@ -153,6 +153,14 @@ export default function ChatPage() {
     setCompareSummaries([]);
   };
 
+  // Navigate to a different grant from within GrantProfile (e.g. from Similar Grants)
+  const handleNavigateToGrant = (referenceNumber: string) => {
+    const target = grantRegistry?.grants.find((g) => g.ref === referenceNumber);
+    if (target) {
+      handleSelectGrant(target);
+    }
+  };
+
   // Show loading state while session is loading
   if (status === "loading") {
     return (
@@ -232,7 +240,11 @@ export default function ChatPage() {
 
         {/* Grant profile overlay (hidden during comparison) */}
         {compareGrants.length < 2 && !isLoadingComparison && (
-          <GrantProfile grant={selectedGrant} onClose={handleCloseProfile} />
+          <GrantProfile
+            grant={selectedGrant}
+            onClose={handleCloseProfile}
+            onNavigateToGrant={handleNavigateToGrant}
+          />
         )}
 
         {/* Error display */}

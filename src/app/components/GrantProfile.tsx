@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { GrantRecord, GrantSummaryCard } from "@/types/grants";
 import { DocumentType } from "@/types/documents";
+import SimilarGrantsSection from "./SimilarGrantsSection";
 
 interface GrantProfileProps {
   grant: GrantRecord | null;
   onClose: () => void;
+  onNavigateToGrant?: (referenceNumber: string) => void;
 }
 
 interface GrantDocument {
@@ -69,7 +71,7 @@ function Section({
   );
 }
 
-export default function GrantProfile({ grant, onClose }: GrantProfileProps) {
+export default function GrantProfile({ grant, onClose, onNavigateToGrant }: GrantProfileProps) {
   const [documents, setDocuments] = useState<GrantDocument[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [summary, setSummary] = useState<GrantSummaryCard | null>(null);
@@ -272,6 +274,15 @@ export default function GrantProfile({ grant, onClose }: GrantProfileProps) {
           <div className="py-3 border-b border-gray-700">
             <p className="text-xs text-red-400/70">{summaryError}</p>
           </div>
+        )}
+
+        {/* Similar Grants Finder */}
+        {!loadingSummary && onNavigateToGrant && (
+          <SimilarGrantsSection
+            grant={grant}
+            summary={summary}
+            onNavigateToGrant={onNavigateToGrant}
+          />
         )}
 
         {/* Overview Section */}

@@ -246,7 +246,7 @@ Return ONLY valid JSON (no markdown code fences, no commentary):
   }
 }
 
-function buildTextRepresentation(card: GrantSummaryCard): string {
+export function buildTextRepresentation(card: GrantSummaryCard): string {
   const parts = [
     `Grant Summary: ${card.grantee_name} (${card.reference_number})`,
     card.one_liner,

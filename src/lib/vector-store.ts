@@ -1,6 +1,6 @@
 import { Pinecone, type SearchRecordsResponse } from "@pinecone-database/pinecone";
 import { DocumentChunk, ChunkMetadata } from "@/types/documents";
-import { GrantSummaryCard } from "@/types/grants";
+import { GrantSummaryCard, SimilarGrantResult } from "@/types/grants";
 
 const INDEX_NAME = "gitlab-foundation-grants";
 
@@ -345,6 +345,105 @@ export async function upsertSummaryCard(
       },
     ],
   });
+}
+
+// ============================================================
+// Similar grant search — find grants semantically similar to a given one
+// ============================================================
+
+/**
+ * Search for grants similar to a given grant using semantic similarity.
+ * Uses a separate field list from searchChunks to include summary card
+ * metadata (record_type, one_liner).
+ *
+ * Groups results by reference_number, takes max score per group,
+ * and returns the top results.
+ */
+export async function searchSimilarGrants(
+  queryText: string,
+  sourceReferenceNumber: string,
+  topK: number = 50,
+  maxResults: number = 8
+): Promise<SimilarGrantResult[]> {
+  const index = getIndex();
+
+  const response: SearchRecordsResponse = await index.searchRecords({
+    query: {
+      topK,
+      inputs: { text: queryText },
+    },
+    fields: [
+      "reference_number", "grantee_name", "grantee_country",
+      "intervention_area_primary", "primary_population_focus",
+      "grant_portfolio_type", "impact_pathway", "grant_amount",
+      "active", "record_type", "one_liner",
+    ],
+  });
+
+  const hits = response.result?.hits ?? [];
+
+  // Group hits by reference_number, excluding the source grant
+  const groups = new Map<string, {
+    maxScore: number;
+    count: number;
+    bestHit: Record<string, unknown>;
+    oneLiner: string | null;
+  }>();
+
+  for (const hit of hits) {
+    const fields = (hit.fields ?? {}) as Record<string, unknown>;
+    const ref = fields.reference_number as string;
+
+    if (!ref || ref === sourceReferenceNumber) continue;
+
+    const existing = groups.get(ref);
+    const score = hit._score;
+
+    // Extract one_liner from summary card records
+    const recordType = fields.record_type as string | undefined;
+    const oneLiner = recordType === "summary_card"
+      ? (fields.one_liner as string) || null
+      : null;
+
+    if (!existing) {
+      groups.set(ref, {
+        maxScore: score,
+        count: 1,
+        bestHit: fields,
+        oneLiner,
+      });
+    } else {
+      existing.count++;
+      if (score > existing.maxScore) {
+        existing.maxScore = score;
+        existing.bestHit = fields;
+      }
+      if (oneLiner && !existing.oneLiner) {
+        existing.oneLiner = oneLiner;
+      }
+    }
+  }
+
+  // Convert to results, sort by score, take top N
+  const results: SimilarGrantResult[] = Array.from(groups.entries())
+    .map(([ref, group]) => ({
+      reference_number: ref,
+      grantee_name: (group.bestHit.grantee_name as string) ?? "",
+      grantee_country: (group.bestHit.grantee_country as string) ?? "",
+      intervention_area_primary: (group.bestHit.intervention_area_primary as string) ?? "",
+      primary_population_focus: (group.bestHit.primary_population_focus as string) ?? "",
+      grant_portfolio_type: (group.bestHit.grant_portfolio_type as string) ?? "",
+      impact_pathway: (group.bestHit.impact_pathway as string) ?? "",
+      grant_amount: (group.bestHit.grant_amount as number) ?? null,
+      active: (group.bestHit.active as boolean) ?? false,
+      similarity_score: group.maxScore,
+      matching_chunk_count: group.count,
+      one_liner: group.oneLiner,
+    }))
+    .sort((a, b) => b.similarity_score - a.similarity_score)
+    .slice(0, maxResults);
+
+  return results;
 }
 
 function safeParseJsonArray(value: string | undefined | null): string[] {

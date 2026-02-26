@@ -152,5 +152,44 @@ export interface GrantComparisonAnalysis {
   recommendation: string;
 }
 
+// Similar grant result from Pinecone semantic search
+export interface SimilarGrantResult {
+  reference_number: string;
+  grantee_name: string;
+  grantee_country: string;
+  intervention_area_primary: string;
+  primary_population_focus: string;
+  grant_portfolio_type: string;
+  impact_pathway: string;
+  grant_amount: number | null;
+  active: boolean;
+  similarity_score: number;
+  matching_chunk_count: number;
+  one_liner: string | null;
+}
+
+export interface SimilarGrantsResponse {
+  source_reference: string;
+  results: SimilarGrantResult[];
+}
+
+// AI-generated introduction rationale for connecting two grantees
+export interface IntroductionRationale {
+  commonalities: string[];
+  learning_opportunities: {
+    source_can_learn: string;
+    target_can_learn: string;
+  };
+  introduction_message: string;
+}
+
+// AI-generated peer insights from similar grants' documents
+export interface PeerInsights {
+  challenges_faced: string[];
+  what_worked: string[];
+  practical_advice: string[];
+  source_grants: string[];
+}
+
 // Column mapping from spreadsheet headers to our field names
 export type ColumnMapping = Record<string, keyof GrantRecord>;
