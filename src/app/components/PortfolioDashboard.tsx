@@ -14,10 +14,11 @@ interface PortfolioDashboardProps {
 const DOC_TYPES: { key: DocumentType; label: string; shortLabel: string }[] = [
   { key: "grant_description", label: "Grant Description", shortLabel: "Grant Desc" },
   { key: "midpoint_checkin_transcript", label: "Midpoint Transcript", shortLabel: "Midpoint" },
-  { key: "midpoint_survey", label: "Midpoint Survey", shortLabel: "Mid Survey" },
   { key: "impact_survey", label: "Impact Survey", shortLabel: "Impact" },
   { key: "closeout_transcript", label: "Closeout Transcript", shortLabel: "Closeout" },
 ];
+
+const TOTAL_DOC_TYPES = DOC_TYPES.length; // 4
 
 function formatMoney(value: number): string {
   if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
@@ -25,8 +26,11 @@ function formatMoney(value: number): string {
   return `$${value.toLocaleString()}`;
 }
 
-type SortField = "name" | "country" | "rfp" | "totalDocs";
+type SortField = "name" | "country" | "rfp" | "totalDocs" | DocumentType;
 type SortDir = "asc" | "desc";
+
+// Per-doc-type filter: null = show all, "has" = only grants WITH that doc, "missing" = only grants WITHOUT
+type DocTypeFilter = { docType: DocumentType; mode: "has" | "missing" } | null;
 
 export default function PortfolioDashboard({
   grants,
@@ -38,7 +42,7 @@ export default function PortfolioDashboard({
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [coverageFilter, setCoverageFilter] = useState<"all" | "complete" | "incomplete">("all");
+  const [docTypeFilter, setDocTypeFilter] = useState<DocTypeFilter>(null);
 
   // Fetch coverage data on mount
   useEffect(() => {
@@ -127,11 +131,12 @@ export default function PortfolioDashboard({
       );
     }
 
-    // Coverage filter
-    if (coverageFilter === "complete") {
-      rows = rows.filter((r) => r.totalDocs === 5);
-    } else if (coverageFilter === "incomplete") {
-      rows = rows.filter((r) => r.totalDocs < 5);
+    // Per-document-type filter
+    if (docTypeFilter) {
+      const { docType, mode } = docTypeFilter;
+      rows = rows.filter((r) =>
+        mode === "has" ? r.hasDocs[docType] === true : r.hasDocs[docType] === false
+      );
     }
 
     // Sort
@@ -141,11 +146,17 @@ export default function PortfolioDashboard({
       else if (sortField === "country") cmp = a.country.localeCompare(b.country);
       else if (sortField === "rfp") cmp = a.rfp.localeCompare(b.rfp);
       else if (sortField === "totalDocs") cmp = a.totalDocs - b.totalDocs;
+      else {
+        // Sort by a specific document type column (has=1, missing=0)
+        const aVal = a.hasDocs[sortField as DocumentType] ? 1 : 0;
+        const bVal = b.hasDocs[sortField as DocumentType] ? 1 : 0;
+        cmp = aVal - bVal;
+      }
       return sortDir === "asc" ? cmp : -cmp;
     });
 
     return rows;
-  }, [grants, coverageMap, search, coverageFilter, sortField, sortDir]);
+  }, [grants, coverageMap, search, docTypeFilter, sortField, sortDir]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -159,6 +170,19 @@ export default function PortfolioDashboard({
   const sortIcon = (field: SortField) => {
     if (sortField !== field) return "↕";
     return sortDir === "asc" ? "↑" : "↓";
+  };
+
+  // Toggle doc type filter: click once → show missing, click again → show has, click again → clear
+  const handleDocTypeFilterClick = (docType: DocumentType) => {
+    if (docTypeFilter?.docType === docType) {
+      if (docTypeFilter.mode === "missing") {
+        setDocTypeFilter({ docType, mode: "has" });
+      } else {
+        setDocTypeFilter(null);
+      }
+    } else {
+      setDocTypeFilter({ docType, mode: "missing" });
+    }
   };
 
   const activeCount = portfolioSummary.active_grants;
@@ -242,20 +266,42 @@ export default function PortfolioDashboard({
         <div>
           <h3 className="text-sm font-semibold text-gray-200 mb-4">Document Coverage</h3>
 
-          {/* Coverage summary bar */}
+          {/* Coverage summary bar — clickable to filter */}
           {coverageSummary && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-              {coverageSummary.map((cs) => (
-                <div key={cs.key} className="bg-gray-900 rounded-lg border border-gray-800 px-3 py-2">
-                  <div className="text-xs text-gray-500">{cs.label}</div>
-                  <div className="text-sm font-semibold text-gray-100">
-                    {cs.count}{" "}
-                    <span className="text-xs font-normal text-gray-500">
-                      / {portfolioSummary.total_grants}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              {coverageSummary.map((cs) => {
+                const isActiveFilter = docTypeFilter?.docType === cs.key;
+                return (
+                  <button
+                    key={cs.key}
+                    onClick={() => handleDocTypeFilterClick(cs.key)}
+                    className={`text-left bg-gray-900 rounded-lg border px-3 py-2 transition-colors ${
+                      isActiveFilter
+                        ? "border-gitlab-orange ring-1 ring-gitlab-orange/30"
+                        : "border-gray-800 hover:border-gray-600"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">{cs.label}</span>
+                      {isActiveFilter && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                          docTypeFilter!.mode === "missing"
+                            ? "bg-red-900/30 text-red-400"
+                            : "bg-green-900/30 text-green-400"
+                        }`}>
+                          {docTypeFilter!.mode === "missing" ? "Missing" : "Has"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-100">
+                      {cs.count}{" "}
+                      <span className="text-xs font-normal text-gray-500">
+                        / {portfolioSummary.total_grants}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -268,22 +314,46 @@ export default function PortfolioDashboard({
               placeholder="Search grants..."
               className="w-full sm:w-64 text-xs rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-gray-100 placeholder-gray-500 focus:border-gitlab-orange focus:outline-none"
             />
-            <div className="flex gap-1">
-              {(["all", "incomplete", "complete"] as const).map((f) => (
+            <div className="flex gap-1 flex-wrap">
+              {DOC_TYPES.map((dt) => {
+                const isActive = docTypeFilter?.docType === dt.key;
+                return (
+                  <button
+                    key={dt.key}
+                    onClick={() => handleDocTypeFilterClick(dt.key)}
+                    className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
+                      isActive
+                        ? docTypeFilter!.mode === "missing"
+                          ? "border-red-500/50 text-red-400 bg-red-900/20"
+                          : "border-green-500/50 text-green-400 bg-green-900/20"
+                        : "border-gray-700 text-gray-500 hover:text-gray-300"
+                    }`}
+                    title={
+                      isActive
+                        ? `Showing ${docTypeFilter!.mode === "missing" ? "missing" : "available"} — click to ${docTypeFilter!.mode === "missing" ? "show available" : "clear"}`
+                        : `Filter by ${dt.label}`
+                    }
+                  >
+                    {isActive && (
+                      <span className="mr-1">
+                        {docTypeFilter!.mode === "missing" ? "✗" : "✓"}
+                      </span>
+                    )}
+                    {dt.shortLabel}
+                  </button>
+                );
+              })}
+              {docTypeFilter && (
                 <button
-                  key={f}
-                  onClick={() => setCoverageFilter(f)}
-                  className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                    coverageFilter === f
-                      ? "border-gitlab-orange text-gitlab-orange bg-gitlab-orange/10"
-                      : "border-gray-700 text-gray-500 hover:text-gray-300"
-                  }`}
+                  onClick={() => setDocTypeFilter(null)}
+                  className="text-xs px-2 py-1.5 rounded-lg border border-gray-700 text-gray-500 hover:text-gray-300 transition-colors"
+                  title="Clear filter"
                 >
-                  {f === "all" ? "All" : f === "incomplete" ? "Missing Docs" : "Complete"}
+                  Clear
                 </button>
-              ))}
+              )}
             </div>
-            <span className="text-xs text-gray-600 ml-auto">
+            <span className="text-xs text-gray-600 ml-auto whitespace-nowrap">
               {tableRows.length} grant{tableRows.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -321,10 +391,11 @@ export default function PortfolioDashboard({
                     {DOC_TYPES.map((dt) => (
                       <th
                         key={dt.key}
-                        className="text-center px-2 py-2 text-gray-400 font-semibold whitespace-nowrap"
-                        title={dt.label}
+                        className="text-center px-2 py-2 text-gray-400 font-semibold whitespace-nowrap cursor-pointer hover:text-gray-200"
+                        title={`Sort by ${dt.label}`}
+                        onClick={() => handleSort(dt.key)}
                       >
-                        {dt.shortLabel}
+                        {dt.shortLabel} {sortIcon(dt.key)}
                       </th>
                     ))}
                     <th
@@ -361,7 +432,7 @@ export default function PortfolioDashboard({
                       <td className="text-center px-2 py-2">
                         <span
                           className={`text-xs font-medium ${
-                            row.totalDocs === 5
+                            row.totalDocs === TOTAL_DOC_TYPES
                               ? "text-green-400"
                               : row.totalDocs >= 3
                               ? "text-yellow-400"
@@ -370,7 +441,7 @@ export default function PortfolioDashboard({
                               : "text-gray-600"
                           }`}
                         >
-                          {row.totalDocs}/5
+                          {row.totalDocs}/{TOTAL_DOC_TYPES}
                         </span>
                       </td>
                     </tr>

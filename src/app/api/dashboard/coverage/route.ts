@@ -8,7 +8,6 @@ import { DocumentCoverageMap, DocumentCoverageResponse } from "@/types/dashboard
 const DOC_TYPES: DocumentType[] = [
   "grant_description",
   "midpoint_checkin_transcript",
-  "midpoint_survey",
   "impact_survey",
   "closeout_transcript",
 ];
