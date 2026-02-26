@@ -197,9 +197,19 @@ export default function ChatInterface({
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))}
-            {status === "submitted" && (
-              <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <div className="animate-pulse">Analyzing portfolio data...</div>
+            {isLoading && (
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-purple-600/80 flex items-center justify-center text-[10px] font-bold text-white">
+                  GL
+                </div>
+                <div className="flex items-center gap-2 text-gray-400 text-sm pt-1">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-gitlab-orange rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-2 h-2 bg-gitlab-orange rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-2 h-2 bg-gitlab-orange rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </div>
+                  <span className="ml-1 text-gray-500">Analyzing portfolio data…</span>
+                </div>
               </div>
             )}
           </div>
