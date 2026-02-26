@@ -133,5 +133,24 @@ export interface GrantSummaryCard {
   document_types_used: string[];
 }
 
+// AI-generated comparative analysis for 2-3 grants
+export interface GrantComparisonAnalysis {
+  overall_assessment: string;
+  goal_completion: {
+    leader: string;
+    analysis: string;
+  };
+  roi_performance: {
+    leader: string;
+    analysis: string;
+  };
+  challenges_comparison: {
+    hardest: string;
+    analysis: string;
+  };
+  key_differences: string[];
+  recommendation: string;
+}
+
 // Column mapping from spreadsheet headers to our field names
 export type ColumnMapping = Record<string, keyof GrantRecord>;

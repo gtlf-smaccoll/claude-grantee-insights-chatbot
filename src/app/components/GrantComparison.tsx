@@ -1,6 +1,7 @@
 "use client";
 
-import { GrantRecord, GrantSummaryCard } from "@/types/grants";
+import { useEffect, useState } from "react";
+import { GrantRecord, GrantSummaryCard, GrantComparisonAnalysis } from "@/types/grants";
 
 interface GrantComparisonProps {
   grants: GrantRecord[];
@@ -190,6 +191,43 @@ export default function GrantComparison({
     );
   }
 
+  const [analysis, setAnalysis] = useState<GrantComparisonAnalysis | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+  // Fetch AI comparative analysis when grants + summaries are ready
+  useEffect(() => {
+    if (grants.length < 2) return;
+
+    const fetchAnalysis = async () => {
+      setAnalysisLoading(true);
+      setAnalysisError(null);
+      try {
+        const res = await fetch("/api/grants/compare", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ grants, summaries }),
+        });
+        if (res.ok) {
+          const data: GrantComparisonAnalysis = await res.json();
+          setAnalysis(data);
+        } else if (res.status === 503) {
+          // API not configured — skip silently
+          setAnalysis(null);
+        } else {
+          setAnalysisError("Failed to generate analysis");
+        }
+      } catch (err) {
+        console.error("Comparison analysis fetch failed:", err);
+        setAnalysisError("Failed to generate analysis");
+      } finally {
+        setAnalysisLoading(false);
+      }
+    };
+
+    fetchAnalysis();
+  }, [grants, summaries]);
+
   if (grants.length < 2) return null;
 
   const colCount = grants.length;
@@ -246,8 +284,109 @@ export default function GrantComparison({
           </div>
         </div>
 
+        {/* AI Comparative Analysis */}
+        <div className="py-5 px-4 border-b border-gray-800 bg-gray-900/30">
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="w-4 h-4 text-gitlab-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            <h3 className="text-sm font-semibold text-gray-100">AI Comparative Analysis</h3>
+            {analysisLoading && (
+              <div className="flex gap-1 ml-1">
+                <span className="w-1.5 h-1.5 bg-gitlab-orange rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 bg-gitlab-orange rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 bg-gitlab-orange rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            )}
+          </div>
+
+          {analysisLoading && (
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-800 rounded w-5/6" />
+              <div className="h-3 bg-gray-800 rounded w-full" />
+              <div className="h-3 bg-gray-800 rounded w-4/5" />
+              <div className="grid grid-cols-3 gap-4 mt-4">
+                <div className="h-20 bg-gray-800 rounded" />
+                <div className="h-20 bg-gray-800 rounded" />
+                <div className="h-20 bg-gray-800 rounded" />
+              </div>
+            </div>
+          )}
+
+          {analysisError && !analysisLoading && (
+            <p className="text-xs text-red-400/70">{analysisError}</p>
+          )}
+
+          {analysis && !analysisLoading && (
+            <div className="space-y-5">
+              {/* Overall Assessment */}
+              <p className="text-sm text-gray-300 leading-relaxed">
+                {analysis.overall_assessment}
+              </p>
+
+              {/* Verdict cards */}
+              <div className={`grid gap-3 ${colCount === 2 ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-3"}`}>
+                {/* Goal Completion */}
+                <div className="bg-gray-900 rounded-lg border border-gray-800 p-3">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-green-400 text-sm">🏆</span>
+                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Goal Completion</span>
+                  </div>
+                  <p className="text-xs font-medium text-green-400 mb-1.5">{analysis.goal_completion.leader}</p>
+                  <p className="text-xs text-gray-400 leading-relaxed">{analysis.goal_completion.analysis}</p>
+                </div>
+
+                {/* ROI Performance */}
+                <div className="bg-gray-900 rounded-lg border border-gray-800 p-3">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-gitlab-orange text-sm">📈</span>
+                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">ROI Performance</span>
+                  </div>
+                  <p className="text-xs font-medium text-gitlab-orange mb-1.5">{analysis.roi_performance.leader}</p>
+                  <p className="text-xs text-gray-400 leading-relaxed">{analysis.roi_performance.analysis}</p>
+                </div>
+
+                {/* Toughest Challenges */}
+                <div className="bg-gray-900 rounded-lg border border-gray-800 p-3">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-red-400 text-sm">⚡</span>
+                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Toughest Challenges</span>
+                  </div>
+                  <p className="text-xs font-medium text-red-400 mb-1.5">{analysis.challenges_comparison.hardest}</p>
+                  <p className="text-xs text-gray-400 leading-relaxed">{analysis.challenges_comparison.analysis}</p>
+                </div>
+              </div>
+
+              {/* Key Differences */}
+              {analysis.key_differences.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-400 mb-2">Key Differences</h4>
+                  <ul className="space-y-1.5">
+                    {analysis.key_differences.map((diff, i) => (
+                      <li key={i} className="text-xs text-gray-300 flex gap-2">
+                        <span className="text-gitlab-orange flex-shrink-0">•</span>
+                        <span>{diff}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Recommendation */}
+              {analysis.recommendation && (
+                <div className="bg-gitlab-orange/5 border border-gitlab-orange/20 rounded-lg px-3 py-2.5">
+                  <p className="text-xs text-gray-300">
+                    <span className="font-semibold text-gitlab-orange">Insight: </span>
+                    {analysis.recommendation}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* AI Summaries */}
-        <ComparisonSection title="AI Summary">
+        <ComparisonSection title="Per-Grant AI Summary">
           <TextRow
             label="Project Summary"
             values={summaries.map((s) => s?.project_summary)}
