@@ -182,10 +182,10 @@ export default function ChatInterface({
       )}
 
       {/* Messages area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
-            <h2 className="text-xl font-medium text-gray-300 mb-2">
+            <h2 className="text-lg sm:text-xl font-medium text-gray-300 mb-2">
               GitLab Foundation Grant Insights
             </h2>
             <p className="text-sm text-gray-500 max-w-md text-center">
@@ -236,7 +236,7 @@ export default function ChatInterface({
       </div>
 
       {/* Input area */}
-      <div className="border-t border-gray-800 bg-gray-950 px-4 py-4">
+      <div className="border-t border-gray-800 bg-gray-950 px-3 sm:px-4 py-3 sm:py-4">
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
           <div className="relative">
             <textarea

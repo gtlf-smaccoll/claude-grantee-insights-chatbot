@@ -139,20 +139,33 @@ export default function GrantProfile({ grant, onClose, onNavigateToGrant }: Gran
   if (!grant) return null;
 
   return (
-    <div className="fixed right-0 top-0 w-96 h-screen bg-gray-900 border-l border-gray-700 z-50 flex flex-col shadow-lg">
+    <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col lg:inset-auto lg:right-0 lg:top-0 lg:w-96 lg:h-screen lg:border-l lg:border-gray-700 lg:shadow-lg">
       {/* Sticky Header */}
       <div className="flex-shrink-0 px-4 py-4 border-b border-gray-700 bg-gray-950 flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-semibold text-gray-100 truncate">
-            {grant.grantee_name}
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Ref: {grant.reference_number} • {grant.grantee_country}
-          </p>
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          {/* Back arrow on mobile, hidden on desktop */}
+          <button
+            onClick={onClose}
+            className="flex-shrink-0 text-gray-400 hover:text-gray-300 p-1 -ml-1 mt-0.5 lg:hidden"
+            aria-label="Back"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-semibold text-gray-100 truncate">
+              {grant.grantee_name}
+            </h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Ref: {grant.reference_number} • {grant.grantee_country}
+            </p>
+          </div>
         </div>
+        {/* X button on desktop, hidden on mobile */}
         <button
           onClick={onClose}
-          className="flex-shrink-0 text-gray-400 hover:text-gray-300 text-xl leading-none"
+          className="flex-shrink-0 text-gray-400 hover:text-gray-300 text-xl leading-none hidden lg:block"
           aria-label="Close"
         >
           ✕

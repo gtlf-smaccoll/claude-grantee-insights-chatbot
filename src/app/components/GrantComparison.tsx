@@ -72,7 +72,7 @@ function MetricRow({
 }) {
   return (
     <div className="flex items-center py-1.5 px-4 hover:bg-gray-900/30">
-      <div className="w-44 flex-shrink-0 text-xs text-gray-500">{label}</div>
+      <div className="w-28 sm:w-44 flex-shrink-0 text-xs text-gray-500">{label}</div>
       <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${values.length}, 1fr)` }}>
         {values.map((val, i) => (
           <div key={i} className="text-sm text-gray-200 px-3">
@@ -98,7 +98,7 @@ function HighlightMetricRow({
   const bestIdx = getBestIndex(rawValues, highlight);
   return (
     <div className="flex items-center py-1.5 px-4 hover:bg-gray-900/30">
-      <div className="w-44 flex-shrink-0 text-xs text-gray-500">{label}</div>
+      <div className="w-28 sm:w-44 flex-shrink-0 text-xs text-gray-500">{label}</div>
       <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${rawValues.length}, 1fr)` }}>
         {rawValues.map((val, i) => (
           <div
@@ -124,7 +124,7 @@ function TextRow({
 }) {
   return (
     <div className="flex items-start py-1.5 px-4 hover:bg-gray-900/30">
-      <div className="w-44 flex-shrink-0 text-xs text-gray-500 pt-0.5">{label}</div>
+      <div className="w-28 sm:w-44 flex-shrink-0 text-xs text-gray-500 pt-0.5">{label}</div>
       <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${values.length}, 1fr)` }}>
         {values.map((val, i) => (
           <div key={i} className="text-sm text-gray-200 px-3">
@@ -147,7 +147,7 @@ function BulletListRow({
 }) {
   return (
     <div className="flex items-start py-1.5 px-4 hover:bg-gray-900/30">
-      <div className="w-44 flex-shrink-0 text-xs text-gray-500 pt-0.5">{label}</div>
+      <div className="w-28 sm:w-44 flex-shrink-0 text-xs text-gray-500 pt-0.5">{label}</div>
       <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${lists.length}, 1fr)` }}>
         {lists.map((items, i) => (
           <div key={i} className="px-3">
@@ -235,7 +235,7 @@ export default function GrantComparison({
   return (
     <div className="flex flex-col flex-1 bg-gray-950 min-h-0">
       {/* Sticky header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-700 flex-shrink-0 bg-gray-950">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-700 flex-shrink-0 bg-gray-950">
         <h2 className="text-sm font-semibold text-gray-100">
           Comparing {colCount} Grants
         </h2>
@@ -248,10 +248,10 @@ export default function GrantComparison({
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-auto">
         {/* Grant header cards */}
-        <div className="flex items-start py-4 px-4 border-b border-gray-800">
-          <div className="w-44 flex-shrink-0" />
+        <div className="flex items-start py-4 px-4 border-b border-gray-800 min-w-[600px] lg:min-w-0">
+          <div className="w-28 sm:w-44 flex-shrink-0" />
           <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
             {grants.map((g, i) => (
               <div key={g.reference_number} className="px-3">
@@ -325,7 +325,7 @@ export default function GrantComparison({
               </p>
 
               {/* Verdict cards */}
-              <div className={`grid gap-3 ${colCount === 2 ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-3"}`}>
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {/* Goal Completion */}
                 <div className="bg-gray-900 rounded-lg border border-gray-800 p-3">
                   <div className="flex items-center gap-1.5 mb-2">

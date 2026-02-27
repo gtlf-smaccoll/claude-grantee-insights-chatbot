@@ -23,6 +23,9 @@ export default function ChatPage() {
   const [scopedGrantRefs, setScopedGrantRefs] = useState<string[] | undefined>();
   const [showDashboard, setShowDashboard] = useState(false);
 
+  // Mobile sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   // Compare mode state
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [compareRefs, setCompareRefs] = useState<string[]>([]);
@@ -173,33 +176,62 @@ export default function ChatPage() {
   // Show authenticated content
   if (status === "authenticated") {
     return (
-      <div className="flex h-screen">
+      <div className={`flex h-screen ${sidebarOpen ? 'overflow-hidden' : ''}`}>
         {/* Sidebar with grant list */}
         {grantRegistry && (
           <GrantSidebar
             grants={grantRegistry.grants}
-            onSelectGrant={handleSelectGrant}
-            onApplyFiltersToChat={handleApplyFiltersToChat}
+            onSelectGrant={(grant) => {
+              handleSelectGrant(grant);
+              setSidebarOpen(false);
+            }}
+            onApplyFiltersToChat={(grants) => {
+              handleApplyFiltersToChat(grants);
+              setSidebarOpen(false);
+            }}
             selectedGrantRef={selectedGrantRef}
             isLoadingGrant={isLoadingGrant}
             isCompareMode={isCompareMode}
             compareRefs={compareRefs}
             onToggleCompareMode={handleToggleCompareMode}
             onToggleCompareGrant={handleToggleCompareGrant}
-            onExecuteComparison={handleExecuteComparison}
+            onExecuteComparison={() => {
+              handleExecuteComparison();
+              setSidebarOpen(false);
+            }}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Mobile sidebar backdrop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
           />
         )}
 
         {/* Main content area */}
         <main className="flex-1 flex flex-col min-w-0">
           {/* Header with logo + dashboard toggle */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-950 flex-shrink-0">
-            <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-gray-800 bg-gray-950 flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              {/* Mobile hamburger menu */}
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden p-1 -ml-1 text-gray-400 hover:text-gray-200"
+                aria-label="Open grant list"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/gtlf-icon.svg" alt="GitLab Foundation" className="w-6 h-6" />
               <h1 className="text-sm font-semibold text-gray-200 tracking-tight">
                 <span className="text-gitlab-orange">GitLab Foundation</span>{" "}
-                <span className="text-gray-400 font-normal">Grant Insight Generator</span>
+                <span className="text-gray-400 font-normal hidden sm:inline">Grant Insight Generator</span>
               </h1>
             </div>
             <button

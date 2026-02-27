@@ -191,7 +191,7 @@ export default function PortfolioDashboard({
   return (
     <div className="flex flex-col h-full bg-gray-950">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-700 flex-shrink-0">
         <h2 className="text-lg font-semibold text-gray-100">Portfolio Dashboard</h2>
         <button
           onClick={onClose}
@@ -202,7 +202,7 @@ export default function PortfolioDashboard({
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
         {/* ===== STATS SECTION ===== */}
         <div className="mb-8">
           {/* Top stat cards */}

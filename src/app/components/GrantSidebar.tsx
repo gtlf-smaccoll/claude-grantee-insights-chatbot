@@ -15,6 +15,8 @@ interface GrantSidebarProps {
   onToggleCompareMode?: () => void;
   onToggleCompareGrant?: (grant: CondensedGrant) => void;
   onExecuteComparison?: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export default function GrantSidebar({
@@ -28,6 +30,8 @@ export default function GrantSidebar({
   onToggleCompareMode,
   onToggleCompareGrant,
   onExecuteComparison,
+  isOpen = false,
+  onClose,
 }: GrantSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<{
@@ -85,7 +89,15 @@ export default function GrantSidebar({
   };
 
   return (
-    <aside className="hidden lg:flex lg:w-72 flex-col border-r border-gray-700 bg-gray-950 min-h-screen">
+    <aside
+      className={`
+        fixed inset-y-0 left-0 z-50 w-72 flex-col border-r border-gray-700 bg-gray-950
+        transform transition-transform duration-200 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:relative lg:translate-x-0 lg:transition-none
+        ${isOpen ? 'flex' : 'hidden lg:flex'}
+      `}
+    >
       {/* Header */}
       <div className="px-4 py-4 border-b border-gray-700">
         <div className="flex items-center justify-between">
@@ -99,16 +111,29 @@ export default function GrantSidebar({
                 : `${grants.length} grants`}
             </p>
           </div>
-          <button
-            onClick={onToggleCompareMode}
-            className={`text-[10px] px-2 py-1 rounded border transition-colors ${
-              isCompareMode
-                ? "border-gitlab-orange text-gitlab-orange bg-gitlab-orange/10"
-                : "border-gray-600 text-gray-500 hover:text-gray-300 hover:border-gray-500"
-            }`}
-          >
-            {isCompareMode ? "Exit" : "Compare"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onToggleCompareMode}
+              className={`text-[10px] px-2 py-1 rounded border transition-colors ${
+                isCompareMode
+                  ? "border-gitlab-orange text-gitlab-orange bg-gitlab-orange/10"
+                  : "border-gray-600 text-gray-500 hover:text-gray-300 hover:border-gray-500"
+              }`}
+            >
+              {isCompareMode ? "Exit" : "Compare"}
+            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="lg:hidden text-gray-400 hover:text-gray-200 p-1"
+                aria-label="Close sidebar"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
