@@ -1,17 +1,15 @@
-import { PDFParse } from "pdf-parse";
+import pdf from "pdf-parse";
 import mammoth from "mammoth";
 import { exportGoogleDoc, downloadFile } from "./google-drive";
 import { DriveFileInfo } from "@/types/documents";
 
 /**
- * Extract plain text from a PDF buffer using pdf-parse v2.
- * The v2 API uses a class-based approach with PDFParse.
+ * Extract plain text from a PDF buffer using pdf-parse v1.
+ * v1 works natively in Node.js serverless environments (no DOM APIs required).
  */
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  const parser = new PDFParse({ data: new Uint8Array(buffer) });
-  const result = await parser.getText();
-  await parser.destroy();
-  return result.text;
+  const data = await pdf(buffer);
+  return data.text;
 }
 
 /**
