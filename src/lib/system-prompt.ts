@@ -1,4 +1,45 @@
-import { GrantRegistry } from "@/types/grants";
+import { GrantRegistry, CondensedGrant } from "@/types/grants";
+
+// Column definitions for compact grant table.
+// Order matters — these become the column headers in the TSV output.
+const GRANT_COLUMNS: (keyof CondensedGrant)[] = [
+  "ref", "name", "country", "state", "rfp", "portfolio_type", "fiscal_year",
+  "quarter", "active", "amount", "cost_per_person", "people_served", "roi",
+  "income_change_pct", "title", "intervention", "intervention_2",
+  "impact_pathway", "labor_market_sector", "project_mechanism", "population",
+  "strategic_alignment", "program_officer", "total_investment", "total_committed",
+  "co_investment", "approval_date", "start_date", "close_date", "grant_years",
+  "fy_quarter", "original_est_people", "pct_below_living_wage",
+  "people_below_living_wage", "pct_above_living_wage", "people_above_living_wage",
+  "living_wage_threshold", "comparison_income", "post_intervention_income",
+  "income_change_avg", "undiscounted_lifetime_income", "pv_lifetime_income_gain",
+  "relative_roi_dil", "lifetime_earnings_per_person",
+  "undiscounted_earnings_per_person", "dil_equivalent", "dil_per_dollar",
+  "roi_or_dil_project", "outcome_data_type", "counterfactual_type",
+  "evidence_quality", "execution_risk", "leadership_gender",
+  "leadership_ethnicity", "leadership_ethnicity_short", "women_impacted_pct",
+  "marginalized_pct", "immigrants_refugees", "justice_involved", "lgbtq",
+];
+
+/**
+ * Build a compact TSV-like table of all grants.
+ * First line: tab-separated column names.
+ * Subsequent lines: tab-separated values per grant.
+ * Nulls/empty become empty strings. This saves ~50% tokens vs JSON objects
+ * by eliminating repeated field names.
+ */
+function buildCompactGrantTable(grants: CondensedGrant[]): string {
+  const header = GRANT_COLUMNS.join("\t");
+  const rows = grants.map((g) =>
+    GRANT_COLUMNS.map((col) => {
+      const val = g[col];
+      if (val === null || val === undefined || val === "") return "";
+      if (typeof val === "boolean") return val ? "1" : "0";
+      return String(val);
+    }).join("\t")
+  );
+  return [header, ...rows].join("\n");
+}
 
 export function buildSystemPrompt(
   registry: GrantRegistry,
@@ -94,11 +135,10 @@ Rules:
 
 ## Current Portfolio Data
 
-The registry below contains ALL fields from the grant spreadsheet. Use abbreviated key names — e.g., "fiscal_year" is the fiscal year, "amount" is grant_amount, "roi" is roi_lifetime_income_gain, "people_served" is estimated_total_people_served. Null/empty values are stripped to save space — if a field is absent for a grant, it means the data is not available.
+Portfolio summary: ${JSON.stringify(registry.portfolio_summary)}
+Last updated: ${registry.last_updated}
 
-${JSON.stringify(registry, (key, value) => {
-    // Strip null, empty strings, and 0 for numeric fields to minimize tokens
-    if (value === null || value === "") return undefined;
-    return value;
-  })}`;
+The grant data below uses a compact columnar format: the first row is column names, subsequent rows are values (one per grant). Null values are represented as empty strings. Use column names to look up any field for any grant.
+
+${buildCompactGrantTable(registry.grants)}`;
 }

@@ -95,70 +95,32 @@ export async function POST(req: Request) {
   }
 
   try {
-    console.log("========== STARTING MAIN TRY BLOCK ==========");
-    console.log("Building system prompt...");
     const systemPrompt = buildSystemPrompt(registry, scopedGrantRefs) + retrievedContext;
-    console.log(`System prompt built successfully. Length: ${systemPrompt.length} chars`);
-
-    console.log("Checking ANTHROPIC_API_KEY...");
-    const anthropicKeys = Object.keys(process.env).filter(k => k.startsWith('ANTHROPIC'));
-    console.log("All ANTHROPIC env vars:", anthropicKeys);
+    console.log(`System prompt: ${systemPrompt.length} chars`);
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    console.log(`API Key value type: ${typeof apiKey}`);
-    console.log(`API Key value: "${apiKey}"`);
-    console.log(`API Key exists: ${!!apiKey}`);
-
-    // Try accessing it directly
-    if (typeof apiKey === 'string' && apiKey.length > 0) {
-      console.log(`API Key length: ${apiKey.length}, starts with: ${apiKey.substring(0, 20)}`);
-    } else if (apiKey === undefined) {
-      console.error("ANTHROPIC_API_KEY is undefined!");
-      // Check if the key itself exists in process.env
-      console.log("Keys in process.env:", Object.keys(process.env).filter(k => k.includes('ANTHROPIC')));
-      for (const key of anthropicKeys) {
-        console.log(`  ${key} = ${process.env[key]}`);
-      }
-    } else if (apiKey === '') {
-      console.error("ANTHROPIC_API_KEY is an empty string!");
-    }
-
     if (!apiKey) {
-      console.error("ANTHROPIC_API_KEY is not configured!");
-      console.error("Available env vars:", Object.keys(process.env).slice(0, 20));
+      console.error("ANTHROPIC_API_KEY is not configured");
       return new Response(
         JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Creating Anthropic client...");
-    // Explicit baseURL + apiKey + headers to override any shell env interference
     const anthropic = createAnthropic({
       baseURL: "https://api.anthropic.com/v1",
       apiKey,
-      headers: {
-        "x-api-key": apiKey,
-      },
     });
-    console.log("Anthropic client created successfully");
 
-    console.log("Converting messages to model format...");
     const modelMessages = await convertToModelMessages(messages);
-    console.log(`Messages converted successfully. Count: ${modelMessages.length}`);
 
-    console.log("Calling streamText with Claude Sonnet...");
     const result = streamText({
       model: anthropic("claude-sonnet-4-20250514"),
       system: systemPrompt,
       messages: modelMessages,
     });
-    console.log("streamText() returned result object");
 
-    console.log("Converting result to stream response...");
-    const response = result.toUIMessageStreamResponse();
-    console.log("Stream response created successfully");
-    return response;
+    return result.toUIMessageStreamResponse();
   } catch (error: unknown) {
     const err = error as { message?: string; stack?: string };
     const errorMsg = err.message || String(error);
