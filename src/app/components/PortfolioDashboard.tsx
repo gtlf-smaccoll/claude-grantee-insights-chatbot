@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { CondensedGrant, PortfolioSummary } from "@/types/grants";
 import { DocumentType } from "@/types/documents";
 import { DocumentCoverageMap, DocumentCoverageResponse } from "@/types/dashboard";
+import ImpactVisualizations from "./charts/ImpactVisualizations";
 
 interface PortfolioDashboardProps {
   grants: CondensedGrant[];
@@ -332,6 +333,9 @@ export default function PortfolioDashboard({
             </div>
           </div>
         </div>
+
+        {/* ===== IMPACT & ROI SECTION ===== */}
+        <ImpactVisualizations grants={grants} />
 
         {/* ===== DOCUMENT COVERAGE SECTION ===== */}
         <div>
