@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { CondensedGrant } from "@/types/grants";
 
@@ -36,6 +36,37 @@ function ChartPlaceholder() {
   );
 }
 
+// Error boundary to prevent chart crashes from taking down the whole page
+class ChartErrorBoundary extends React.Component<
+  { children: React.ReactNode; name: string },
+  { hasError: boolean; error: string }
+> {
+  constructor(props: { children: React.ReactNode; name: string }) {
+    super(props);
+    this.state = { hasError: false, error: "" };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="bg-gray-900 rounded-lg border border-red-900/50 p-4 h-[340px] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-xs text-red-400 mb-1">
+              {this.props.name} failed to load
+            </p>
+            <p className="text-[10px] text-gray-600">{this.state.error}</p>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 interface ImpactVisualizationsProps {
   grants: CondensedGrant[];
 }
@@ -66,15 +97,15 @@ export default function ImpactVisualizations({
     ).sort((a, b) => a - b);
 
     const countries = Array.from(
-      new Set(grants.map((g) => g.country).filter(Boolean))
+      new Set(grants.map((g) => g.country || "").filter(Boolean))
     ).sort();
 
     const rfps = Array.from(
-      new Set(grants.map((g) => g.rfp).filter(Boolean))
+      new Set(grants.map((g) => g.rfp || "").filter(Boolean))
     ).sort();
 
     const strategicAlignments = Array.from(
-      new Set(grants.map((g) => g.strategic_alignment).filter(Boolean))
+      new Set(grants.map((g) => g.strategic_alignment || "").filter(Boolean))
     ).sort();
 
     return { fiscalYears, countries, rfps, strategicAlignments };
@@ -242,16 +273,26 @@ export default function ImpactVisualizations({
       {/* Charts view */}
       {activeTab === "charts" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ROIScatterChart grants={filteredGrants} />
-          <CumulativeImpactChart grants={filteredGrants} />
-          <LifetimeEarningsChart grants={filteredGrants} />
-          <PortfolioCompositionChart grants={filteredGrants} />
+          <ChartErrorBoundary name="ROI Scatter Chart">
+            <ROIScatterChart grants={filteredGrants} />
+          </ChartErrorBoundary>
+          <ChartErrorBoundary name="Cumulative Impact Chart">
+            <CumulativeImpactChart grants={filteredGrants} />
+          </ChartErrorBoundary>
+          <ChartErrorBoundary name="Lifetime Earnings Chart">
+            <LifetimeEarningsChart grants={filteredGrants} />
+          </ChartErrorBoundary>
+          <ChartErrorBoundary name="Portfolio Composition">
+            <PortfolioCompositionChart grants={filteredGrants} />
+          </ChartErrorBoundary>
         </div>
       )}
 
       {/* Summary view */}
       {activeTab === "summary" && (
-        <ROISummaryTable grants={filteredGrants} />
+        <ChartErrorBoundary name="ROI Summary">
+          <ROISummaryTable grants={filteredGrants} />
+        </ChartErrorBoundary>
       )}
     </div>
   );

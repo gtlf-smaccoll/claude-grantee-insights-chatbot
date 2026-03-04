@@ -7,7 +7,6 @@ import {
   Cell,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { CondensedGrant } from "@/types/grants";
 import {
@@ -60,18 +59,18 @@ export default function PortfolioCompositionChart({
     [grants]
   );
 
-  const renderCenterLabel = (label: string) => (
+  const renderCenterLabel = () => (
     <text
       x="50%"
       y="50%"
       textAnchor="middle"
       dominantBaseline="middle"
-      className="fill-gray-300 text-[10px] font-medium"
+      style={{ fill: "#d1d5db", fontSize: "10px", fontWeight: 500 }}
     >
       <tspan x="50%" dy="-6">
         {grants.length} grants
       </tspan>
-      <tspan x="50%" dy="14" className="fill-gray-500 text-[9px]">
+      <tspan x="50%" dy="14" style={{ fill: "#6b7280", fontSize: "9px" }}>
         {formatCompactMoney(totalInvested)}
       </tspan>
     </text>
@@ -140,7 +139,7 @@ export default function PortfolioCompositionChart({
                   String(name),
                 ]}
               />
-              {renderCenterLabel("alignment")}
+              {renderCenterLabel()}
             </PieChart>
           </ResponsiveContainer>
           {renderLegend(alignmentData)}
@@ -179,7 +178,7 @@ export default function PortfolioCompositionChart({
                   String(name),
                 ]}
               />
-              {renderCenterLabel("type")}
+              {renderCenterLabel()}
             </PieChart>
           </ResponsiveContainer>
           {renderLegend(portfolioTypeData)}

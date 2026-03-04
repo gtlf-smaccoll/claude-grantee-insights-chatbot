@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { CondensedGrant, PortfolioSummary } from "@/types/grants";
 import { DocumentType } from "@/types/documents";
 import { DocumentCoverageMap, DocumentCoverageResponse } from "@/types/dashboard";
-import ImpactVisualizations from "./charts/ImpactVisualizations";
+
+const ImpactVisualizations = dynamic(
+  () => import("./charts/ImpactVisualizations"),
+  { ssr: false }
+);
 
 interface PortfolioDashboardProps {
   grants: CondensedGrant[];
