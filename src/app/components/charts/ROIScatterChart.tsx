@@ -93,7 +93,7 @@ function CustomTooltip({
 export default function ROIScatterChart({ grants }: ROIScatterChartProps) {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
-  const { dataByCategory, categories, grantCount } = useMemo(() => {
+  const { dataByCategory, categories, grantCount, xDomain, yDomain } = useMemo(() => {
     const points: ScatterPoint[] = grants
       .filter(
         (g) =>
@@ -124,10 +124,27 @@ export default function ROIScatterChart({ grants }: ROIScatterChartProps) {
       (a, b) => groups[b].length - groups[a].length
     );
 
+    // Compute log-safe domain bounds
+    const xValues = points.map((p) => p.x);
+    const yValues = points.map((p) => p.y);
+    const logFloor = (v: number) => Math.pow(10, Math.floor(Math.log10(v)));
+    const logCeil = (v: number) => Math.pow(10, Math.ceil(Math.log10(v)));
+
+    const xDomain: [number, number] =
+      xValues.length > 0
+        ? [logFloor(Math.min(...xValues)), logCeil(Math.max(...xValues))]
+        : [1, 10000];
+    const yDomain: [number, number] =
+      yValues.length > 0
+        ? [logFloor(Math.min(...yValues)), logCeil(Math.max(...yValues))]
+        : [1, 10000];
+
     return {
       dataByCategory: groups,
       categories: cats,
       grantCount: points.length,
+      xDomain,
+      yDomain,
     };
   }, [grants]);
 
@@ -171,6 +188,9 @@ export default function ROIScatterChart({ grants }: ROIScatterChartProps) {
             type="number"
             dataKey="x"
             name="North Star ROI"
+            scale="log"
+            domain={xDomain}
+            allowDataOverflow
             stroke={CHART_COLORS.axis}
             tick={{ fill: CHART_COLORS.tickLabel, fontSize: 10 }}
             tickFormatter={(v: number) => formatCompactNumber(v)}
@@ -187,6 +207,10 @@ export default function ROIScatterChart({ grants }: ROIScatterChartProps) {
             type="number"
             dataKey="y"
             name="Relative ROI DIL"
+            scale="log"
+            domain={yDomain}
+            allowDataOverflow
+            reversed
             stroke={CHART_COLORS.axis}
             tick={{ fill: CHART_COLORS.tickLabel, fontSize: 10 }}
             tickFormatter={(v: number) => formatCompactNumber(v)}
