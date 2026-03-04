@@ -28,6 +28,15 @@ function formatMoney(value: number): string {
   return `$${value.toLocaleString()}`;
 }
 
+function coverageColor(count: number, total: number): string {
+  if (total === 0) return "text-gray-600";
+  const pct = count / total;
+  if (pct >= 1) return "text-green-400";
+  if (pct >= 0.75) return "text-yellow-400";
+  if (pct >= 0.5) return "text-orange-400";
+  return "text-red-400";
+}
+
 type SortField = "name" | "country" | "rfp" | "totalDocs" | DocumentType;
 type SortDir = "asc" | "desc";
 
@@ -47,6 +56,7 @@ export default function PortfolioDashboard({
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [docTypeFilter, setDocTypeFilter] = useState<DocTypeFilter>(null);
+  const [breakdownBy, setBreakdownBy] = useState<"country" | "rfp">("country");
 
   // Fetch coverage data on mount
   useEffect(() => {
@@ -96,6 +106,38 @@ export default function PortfolioDashboard({
       count: coverageMap[dt.key]?.length ?? 0,
     }));
   }, [coverageMap]);
+
+  // Compute coverage breakdown by country or RFP
+  const coverageBreakdown = useMemo(() => {
+    if (!coverageMap) return null;
+
+    // Build coverage sets
+    const coverageSets: Record<DocumentType, Set<string>> = {} as Record<DocumentType, Set<string>>;
+    for (const dt of DOC_TYPES) {
+      coverageSets[dt.key] = new Set(coverageMap[dt.key] || []);
+    }
+
+    // Group grants by the selected dimension
+    const groups: Record<string, string[]> = {};
+    for (const g of grants) {
+      const key = breakdownBy === "country"
+        ? (g.country || "Unknown")
+        : (g.rfp || "Other");
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(g.ref);
+    }
+
+    // Compute coverage per group
+    return Object.entries(groups)
+      .map(([label, refs]) => {
+        const coverage: Record<string, number> = {};
+        for (const dt of DOC_TYPES) {
+          coverage[dt.key] = refs.filter((ref) => coverageSets[dt.key].has(ref)).length;
+        }
+        return { label, total: refs.length, coverage };
+      })
+      .sort((a, b) => b.total - a.total);
+  }, [grants, coverageMap, breakdownBy]);
 
   // Build coverage rows + apply filters + sorting
   const tableRows = useMemo(() => {
@@ -331,6 +373,86 @@ export default function PortfolioDashboard({
                   </button>
                 );
               })}
+            </div>
+          )}
+
+          {/* Coverage breakdown matrix by country/RFP */}
+          {coverageBreakdown && coverageBreakdown.length > 0 && (
+            <div className="mb-4">
+              {/* Toggle tabs */}
+              <div className="flex items-center gap-1 mb-3">
+                <span className="text-xs text-gray-500 mr-2">Breakdown:</span>
+                <button
+                  onClick={() => setBreakdownBy("country")}
+                  className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
+                    breakdownBy === "country"
+                      ? "bg-gray-700 text-gray-100"
+                      : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  By Country
+                </button>
+                <button
+                  onClick={() => setBreakdownBy("rfp")}
+                  className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
+                    breakdownBy === "rfp"
+                      ? "bg-gray-700 text-gray-100"
+                      : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  By RFP
+                </button>
+              </div>
+
+              {/* Matrix table */}
+              <div className="overflow-x-auto rounded-lg border border-gray-800">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-900">
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left px-3 py-2 text-gray-400 font-semibold whitespace-nowrap">
+                        {breakdownBy === "country" ? "Country" : "RFP Cohort"}
+                      </th>
+                      <th className="text-center px-3 py-2 text-gray-400 font-semibold whitespace-nowrap">
+                        Grants
+                      </th>
+                      {DOC_TYPES.map((dt) => (
+                        <th
+                          key={dt.key}
+                          className="text-center px-3 py-2 text-gray-400 font-semibold whitespace-nowrap"
+                        >
+                          {dt.shortLabel}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {coverageBreakdown.map((row) => (
+                      <tr
+                        key={row.label}
+                        className="border-b border-gray-800 hover:bg-gray-900/50 transition-colors"
+                      >
+                        <td className="px-3 py-2 text-gray-200 font-medium whitespace-nowrap">
+                          {row.label}
+                        </td>
+                        <td className="text-center px-3 py-2 text-gray-400">
+                          {row.total}
+                        </td>
+                        {DOC_TYPES.map((dt) => {
+                          const count = row.coverage[dt.key] ?? 0;
+                          return (
+                            <td key={dt.key} className="text-center px-3 py-2">
+                              <span className={`font-medium ${coverageColor(count, row.total)}`}>
+                                {count}
+                              </span>
+                              <span className="text-gray-600">/{row.total}</span>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
