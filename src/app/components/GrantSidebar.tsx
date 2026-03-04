@@ -38,6 +38,7 @@ export default function GrantSidebar({
     country?: string;
     rfp?: string;
     intervention?: string;
+    strategicAlignment?: string;
     active?: boolean;
   }>({});
 
@@ -69,6 +70,13 @@ export default function GrantSidebar({
     if (filters.intervention) {
       result = result.filter(
         (grant) => grant.intervention.trim() === filters.intervention
+      );
+    }
+
+    // Filter by strategic alignment
+    if (filters.strategicAlignment) {
+      result = result.filter(
+        (grant) => grant.strategic_alignment.trim() === filters.strategicAlignment
       );
     }
 

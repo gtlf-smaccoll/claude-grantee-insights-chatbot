@@ -9,6 +9,7 @@ interface FilterPanelProps {
     country?: string;
     rfp?: string;
     intervention?: string;
+    strategicAlignment?: string;
     active?: boolean;
   };
   onFilterChange: (filters: FilterPanelProps["filters"]) => void;
@@ -37,6 +38,10 @@ export default function FilterPanel({
     new Set(grants.map((g) => g.intervention.trim()).filter(Boolean))
   ).sort();
 
+  const strategicAlignments = Array.from(
+    new Set(grants.map((g) => g.strategic_alignment.trim()).filter(Boolean))
+  ).sort();
+
   const handleCountryChange = (value: string) => {
     onFilterChange({
       ...filters,
@@ -58,6 +63,13 @@ export default function FilterPanel({
     });
   };
 
+  const handleStrategicAlignmentChange = (value: string) => {
+    onFilterChange({
+      ...filters,
+      strategicAlignment: value || undefined,
+    });
+  };
+
   const handleActiveChange = (checked: boolean) => {
     onFilterChange({
       ...filters,
@@ -70,6 +82,7 @@ export default function FilterPanel({
       country: undefined,
       rfp: undefined,
       intervention: undefined,
+      strategicAlignment: undefined,
       active: undefined,
     });
   };
@@ -139,6 +152,25 @@ export default function FilterPanel({
         </select>
       </div>
 
+      {/* Strategic Alignment filter */}
+      <div>
+        <label className="block text-xs font-medium text-gray-400 mb-1">
+          Strategic Alignment
+        </label>
+        <select
+          value={filters.strategicAlignment || ""}
+          onChange={(e) => handleStrategicAlignmentChange(e.target.value)}
+          className="w-full text-xs rounded border border-gray-600 bg-gray-800 text-gray-100 px-2 py-1.5 focus:border-gitlab-orange focus:outline-none focus:ring-1 focus:ring-gitlab-orange"
+        >
+          <option value="">All alignments</option>
+          {strategicAlignments.map((sa) => (
+            <option key={sa} value={sa}>
+              {sa}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Active status filter */}
       <div className="flex items-center gap-2">
         <input
@@ -160,6 +192,7 @@ export default function FilterPanel({
       {(filters.country ||
         filters.rfp ||
         filters.intervention ||
+        filters.strategicAlignment ||
         filters.active) && (
         <button
           onClick={handleResetFilters}
@@ -174,7 +207,7 @@ export default function FilterPanel({
         <button
           onClick={() => onApplyToChat(filteredGrants)}
           className="w-full text-xs font-medium text-white bg-gitlab-orange hover:bg-orange-600 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={resultCount === grants.length && !filters.country && !filters.rfp && !filters.intervention && !filters.active}
+          disabled={resultCount === grants.length && !filters.country && !filters.rfp && !filters.intervention && !filters.strategicAlignment && !filters.active}
         >
           Apply to Chat ({resultCount})
         </button>
