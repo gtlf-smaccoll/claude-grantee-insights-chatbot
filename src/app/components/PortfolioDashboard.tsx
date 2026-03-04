@@ -63,6 +63,7 @@ export default function PortfolioDashboard({
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [docTypeFilter, setDocTypeFilter] = useState<DocTypeFilter>(null);
   const [breakdownBy, setBreakdownBy] = useState<"country" | "rfp">("country");
+  const [dashboardView, setDashboardView] = useState<"impact" | "coverage">("impact");
 
   // Fetch coverage data on mount
   useEffect(() => {
@@ -339,10 +340,37 @@ export default function PortfolioDashboard({
           </div>
         </div>
 
+        {/* ===== DASHBOARD VIEW TOGGLE ===== */}
+        <div className="flex items-center gap-2 mb-6">
+          <button
+            onClick={() => setDashboardView("impact")}
+            className={`text-xs px-4 py-1.5 rounded-lg font-medium transition-colors ${
+              dashboardView === "impact"
+                ? "bg-gitlab-orange text-white"
+                : "bg-gray-800 text-gray-400 hover:text-gray-300 border border-gray-700"
+            }`}
+          >
+            Impact & ROI
+          </button>
+          <button
+            onClick={() => setDashboardView("coverage")}
+            className={`text-xs px-4 py-1.5 rounded-lg font-medium transition-colors ${
+              dashboardView === "coverage"
+                ? "bg-gitlab-orange text-white"
+                : "bg-gray-800 text-gray-400 hover:text-gray-300 border border-gray-700"
+            }`}
+          >
+            Document Coverage
+          </button>
+        </div>
+
         {/* ===== IMPACT & ROI SECTION ===== */}
-        <ImpactVisualizations grants={grants} />
+        {dashboardView === "impact" && (
+          <ImpactVisualizations grants={grants} />
+        )}
 
         {/* ===== DOCUMENT COVERAGE SECTION ===== */}
+        {dashboardView === "coverage" && (
         <div>
           <h3 className="text-sm font-semibold text-gray-200 mb-4">Document Coverage</h3>
 
@@ -611,6 +639,7 @@ export default function PortfolioDashboard({
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

@@ -10,14 +10,13 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  ReferenceLine,
 } from "recharts";
 import { CondensedGrant } from "@/types/grants";
 import {
   CHART_COLORS,
   CATEGORICAL_COLORS,
-  TOOLTIP_STYLE,
   formatCompactMoney,
+  formatCompactNumber,
 } from "./chartTheme";
 
 interface ROIScatterChartProps {
@@ -26,7 +25,7 @@ interface ROIScatterChartProps {
 
 interface ScatterPoint {
   name: string;
-  ref: string;
+  grantRef: string;
   x: number;
   y: number;
   z: number;
@@ -41,10 +40,12 @@ function CustomTooltip({
   payload,
 }: {
   active?: boolean;
-  payload?: Array<{ payload: ScatterPoint }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payload?: any[];
 }) {
   if (!active || !payload || payload.length === 0) return null;
-  const data = payload[0].payload;
+  const data = payload[0]?.payload as ScatterPoint | undefined;
+  if (!data) return null;
 
   return (
     <div
@@ -56,21 +57,34 @@ function CustomTooltip({
         fontSize: "11px",
       }}
     >
-      <p className="text-gray-100 font-medium mb-1">{data.name}</p>
-      <p className="text-gray-400 text-[10px] mb-2">
-        {data.ref} · {data.country}
+      <p style={{ color: "#f3f4f6", fontWeight: 500, marginBottom: 4 }}>
+        {data.name}
       </p>
-      <div className="space-y-0.5 text-gray-300">
+      <p style={{ color: "#9ca3af", fontSize: 10, marginBottom: 8 }}>
+        {data.grantRef} · {data.country}
+      </p>
+      <div style={{ color: "#d1d5db" }}>
         <p>
-          North Star ROI: <span className="text-gray-100 font-medium">{data.x.toLocaleString()}</span>
+          North Star ROI:{" "}
+          <span style={{ color: "#f3f4f6", fontWeight: 500 }}>
+            {formatCompactNumber(data.x)}
+          </span>
         </p>
         <p>
-          Relative ROI DIL: <span className="text-gray-100 font-medium">{data.y.toLocaleString()}</span>
+          Relative ROI DIL:{" "}
+          <span style={{ color: "#f3f4f6", fontWeight: 500 }}>
+            {formatCompactNumber(data.y)}
+          </span>
         </p>
         <p>
-          Grant Amount: <span className="text-gray-100 font-medium">{formatCompactMoney(data.z)}</span>
+          Grant Amount:{" "}
+          <span style={{ color: "#f3f4f6", fontWeight: 500 }}>
+            {formatCompactMoney(data.z)}
+          </span>
         </p>
-        <p className="text-[10px] text-gray-500">{data.category}</p>
+        <p style={{ color: "#6b7280", fontSize: 10, marginTop: 4 }}>
+          {data.category}
+        </p>
       </div>
     </div>
   );
@@ -81,10 +95,16 @@ export default function ROIScatterChart({ grants }: ROIScatterChartProps) {
 
   const { dataByCategory, categories, grantCount } = useMemo(() => {
     const points: ScatterPoint[] = grants
-      .filter((g) => g.roi != null && g.relative_roi_dil != null && g.roi > 0 && g.relative_roi_dil > 0)
+      .filter(
+        (g) =>
+          g.roi != null &&
+          g.relative_roi_dil != null &&
+          g.roi > 0 &&
+          g.relative_roi_dil > 0
+      )
       .map((g) => ({
         name: g.name,
-        ref: g.ref,
+        grantRef: g.ref,
         x: g.roi!,
         y: g.relative_roi_dil!,
         z: g.amount ?? 50000,
@@ -142,7 +162,7 @@ export default function ROIScatterChart({ grants }: ROIScatterChartProps) {
       </p>
 
       <ResponsiveContainer width="100%" height={300}>
-        <ScatterChart margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+        <ScatterChart margin={{ top: 5, right: 10, bottom: 20, left: 0 }}>
           <CartesianGrid
             strokeDasharray="3 3"
             stroke={CHART_COLORS.grid}
@@ -151,17 +171,15 @@ export default function ROIScatterChart({ grants }: ROIScatterChartProps) {
             type="number"
             dataKey="x"
             name="North Star ROI"
-            scale="log"
-            domain={["auto", "auto"]}
             stroke={CHART_COLORS.axis}
             tick={{ fill: CHART_COLORS.tickLabel, fontSize: 10 }}
-            tickFormatter={(v: number) => v.toLocaleString()}
+            tickFormatter={(v: number) => formatCompactNumber(v)}
             axisLine={false}
             tickLine={false}
             label={{
               value: "North Star ROI ($)",
               position: "insideBottom",
-              offset: -2,
+              offset: -12,
               style: { fill: CHART_COLORS.tickLabel, fontSize: 10 },
             }}
           />
@@ -169,14 +187,12 @@ export default function ROIScatterChart({ grants }: ROIScatterChartProps) {
             type="number"
             dataKey="y"
             name="Relative ROI DIL"
-            scale="log"
-            domain={["auto", "auto"]}
             stroke={CHART_COLORS.axis}
             tick={{ fill: CHART_COLORS.tickLabel, fontSize: 10 }}
-            tickFormatter={(v: number) => v.toLocaleString()}
+            tickFormatter={(v: number) => formatCompactNumber(v)}
             axisLine={false}
             tickLine={false}
-            width={50}
+            width={55}
             label={{
               value: "Relative ROI DIL",
               angle: -90,
@@ -191,23 +207,7 @@ export default function ROIScatterChart({ grants }: ROIScatterChartProps) {
             range={sizeRange}
             name="Grant Amount"
           />
-          {/* Reference lines for thresholds */}
-          <ReferenceLine
-            x={100}
-            stroke={CHART_COLORS.axis}
-            strokeDasharray="5 5"
-            strokeOpacity={0.5}
-          />
-          <ReferenceLine
-            y={1000}
-            stroke={CHART_COLORS.axis}
-            strokeDasharray="5 5"
-            strokeOpacity={0.5}
-          />
-          <Tooltip
-            content={<CustomTooltip />}
-            cursor={false}
-          />
+          <Tooltip content={<CustomTooltip />} cursor={false} />
           {categories.map((cat, idx) => (
             <Scatter
               key={cat}
@@ -215,7 +215,9 @@ export default function ROIScatterChart({ grants }: ROIScatterChartProps) {
               data={dataByCategory[cat]}
               fill={CATEGORICAL_COLORS[idx % CATEGORICAL_COLORS.length]}
               fillOpacity={
-                hoveredCategory === null || hoveredCategory === cat ? 0.75 : 0.15
+                hoveredCategory === null || hoveredCategory === cat
+                  ? 0.75
+                  : 0.15
               }
               strokeWidth={0}
             />
