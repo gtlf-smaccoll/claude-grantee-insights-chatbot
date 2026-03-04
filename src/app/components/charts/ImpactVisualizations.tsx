@@ -1,12 +1,40 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { CondensedGrant } from "@/types/grants";
-import ROIScatterChart from "./ROIScatterChart";
-import CumulativeImpactChart from "./CumulativeImpactChart";
-import LifetimeEarningsChart from "./LifetimeEarningsChart";
-import PortfolioCompositionChart from "./PortfolioCompositionChart";
-import ROISummaryTable from "./ROISummaryTable";
+
+// Dynamic imports with SSR disabled — Recharts uses browser APIs
+const ROIScatterChart = dynamic(() => import("./ROIScatterChart"), {
+  ssr: false,
+  loading: () => <ChartPlaceholder />,
+});
+const CumulativeImpactChart = dynamic(
+  () => import("./CumulativeImpactChart"),
+  { ssr: false, loading: () => <ChartPlaceholder /> }
+);
+const LifetimeEarningsChart = dynamic(
+  () => import("./LifetimeEarningsChart"),
+  { ssr: false, loading: () => <ChartPlaceholder /> }
+);
+const PortfolioCompositionChart = dynamic(
+  () => import("./PortfolioCompositionChart"),
+  { ssr: false, loading: () => <ChartPlaceholder /> }
+);
+const ROISummaryTable = dynamic(() => import("./ROISummaryTable"), {
+  ssr: false,
+  loading: () => <ChartPlaceholder />,
+});
+
+function ChartPlaceholder() {
+  return (
+    <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 h-[340px] flex items-center justify-center">
+      <div className="text-xs text-gray-600 animate-pulse">
+        Loading chart...
+      </div>
+    </div>
+  );
+}
 
 interface ImpactVisualizationsProps {
   grants: CondensedGrant[];
