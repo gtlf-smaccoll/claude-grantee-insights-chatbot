@@ -156,6 +156,26 @@ export default function ChatPage() {
     setCompareSummaries([]);
   };
 
+  // Force-refresh grant registry from Google Sheets (clears server cache)
+  const handleRefreshRegistry = async () => {
+    try {
+      setIsLoadingRegistry(true);
+      // Clear the server-side cache first
+      await fetch("/api/grants/refresh", { method: "POST" });
+      // Then re-fetch the fresh data
+      const res = await fetch("/api/grants");
+      if (!res.ok) throw new Error("Failed to fetch grants");
+      const data: GrantRegistry = await res.json();
+      setGrantRegistry(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error refreshing grants");
+      console.error("Failed to refresh grant registry:", err);
+    } finally {
+      setIsLoadingRegistry(false);
+    }
+  };
+
   // Navigate to a different grant from within GrantProfile (e.g. from Similar Grants)
   const handleNavigateToGrant = (referenceNumber: string) => {
     const target = grantRegistry?.grants.find((g) => g.ref === referenceNumber);
@@ -264,6 +284,8 @@ export default function ChatPage() {
               grants={grantRegistry.grants}
               portfolioSummary={grantRegistry.portfolio_summary}
               onClose={() => setShowDashboard(false)}
+              onRefresh={handleRefreshRegistry}
+              isRefreshing={isLoadingRegistry}
             />
           )}
 
