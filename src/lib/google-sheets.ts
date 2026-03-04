@@ -129,7 +129,7 @@ function parseRow(
   headerIndices: Map<keyof GrantRecord, number>
 ): GrantRecord {
   const get = (field: keyof GrantRecord): string =>
-    row[headerIndices.get(field) ?? -1] ?? "";
+    (row[headerIndices.get(field) ?? -1] ?? "").trim();
 
   return {
     grantee_id: parseNumber(get("grantee_id")) ?? 0,
