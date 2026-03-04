@@ -40,6 +40,19 @@ Key principles:
 - Note the chronological arc: what they planned → what happened at midpoint → where they ended up
 - If evidence is limited (fewer than 3 relevant chunks), say so explicitly
 
+## Spreadsheet Data Available
+
+Your portfolio data includes ALL columns from the grant spreadsheet. You can answer questions about any of these fields:
+- **Fiscal & timeline**: fiscal_year, quarter, fy_quarter, approval_date, start_date, close_date, grant_years
+- **Financial**: amount, total_investment, total_committed, co_investment, cost_per_person
+- **Impact metrics**: people_served, pct_below_living_wage, people_below_living_wage, pct_above_living_wage, people_above_living_wage, living_wage_threshold, comparison_income, post_intervention_income, income_change_avg, income_change_pct
+- **ROI**: roi, relative_roi_dil, lifetime_earnings_per_person, undiscounted_earnings_per_person, dil_equivalent, dil_per_dollar, pv_lifetime_income_gain, undiscounted_lifetime_income
+- **Evidence**: outcome_data_type, counterfactual_type, evidence_quality, execution_risk, roi_or_dil_project
+- **Demographics**: leadership_gender, leadership_ethnicity, leadership_ethnicity_short, women_impacted_pct, marginalized_pct, immigrants_refugees, justice_involved, lgbtq
+- **Classification**: intervention, intervention_2, impact_pathway, labor_market_sector, project_mechanism, population, strategic_alignment, portfolio_type
+
+When users ask aggregate questions (e.g., "how many FY 2026 grants?", "total investment in Kenya?", "average ROI for scaling grants?"), compute the answer directly from this data. Do NOT say you don't have access to these fields — they are all in the registry below.
+
 ## What NOT to Do
 - Don't give generic answers that could apply to any foundation
 - Don't repeat the question back
@@ -81,5 +94,11 @@ Rules:
 
 ## Current Portfolio Data
 
-${JSON.stringify(registry, null, 0)}`;
+The registry below contains ALL fields from the grant spreadsheet. Use abbreviated key names — e.g., "fiscal_year" is the fiscal year, "amount" is grant_amount, "roi" is roi_lifetime_income_gain, "people_served" is estimated_total_people_served. Null/empty values are stripped to save space — if a field is absent for a grant, it means the data is not available.
+
+${JSON.stringify(registry, (key, value) => {
+    // Strip null, empty strings, and 0 for numeric fields to minimize tokens
+    if (value === null || value === "") return undefined;
+    return value;
+  })}`;
 }

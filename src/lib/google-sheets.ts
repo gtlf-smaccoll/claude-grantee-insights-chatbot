@@ -202,6 +202,7 @@ function parseRow(
 
 function toCondensed(grant: GrantRecord): CondensedGrant {
   return {
+    // Identity & Classification
     ref: grant.reference_number,
     name: grant.grantee_name,
     title: grant.grant_title,
@@ -210,17 +211,66 @@ function toCondensed(grant: GrantRecord): CondensedGrant {
     rfp: grant.rfp,
     portfolio_type: grant.grant_portfolio_type,
     intervention: grant.intervention_area_primary,
+    intervention_2: grant.intervention_area_secondary,
     impact_pathway: grant.impact_pathway,
     labor_market_sector: grant.labor_market_sector,
     project_mechanism: grant.project_mechanism,
     population: grant.primary_population_focus,
-    amount: grant.grant_amount,
-    people_served: grant.estimated_total_people_served,
-    roi: grant.roi_lifetime_income_gain,
-    income_change_pct: grant.pct_change_in_annual_income,
-    cost_per_person: grant.cost_per_person,
-    active: grant.active,
+    strategic_alignment: grant.strategic_alignment,
     program_officer: grant.program_officer,
+
+    // Financial
+    amount: grant.grant_amount,
+    total_investment: grant.total_investment_including_overhead,
+    total_committed: grant.total_grant_amount_committed,
+    co_investment: grant.additional_co_investment_amounts,
+    cost_per_person: grant.cost_per_person,
+
+    // Timeline & Status
+    approval_date: grant.grant_approval_date,
+    start_date: grant.grant_start_date,
+    close_date: grant.grant_close_date,
+    grant_years: grant.grant_years_length,
+    fiscal_year: grant.fiscal_year,
+    quarter: grant.quarter,
+    fy_quarter: grant.fiscal_year_and_quarter,
+    active: grant.active,
+
+    // Impact & ROI
+    people_served: grant.estimated_total_people_served,
+    original_est_people: grant.original_estimate_total_people_served,
+    pct_below_living_wage: grant.pct_earning_below_living_wage,
+    people_below_living_wage: grant.estimated_people_impacted_below_living_wage,
+    pct_above_living_wage: grant.pct_earning_above_living_wage_due_to_intervention,
+    people_above_living_wage: grant.estimated_people_earning_above_living_wage,
+    living_wage_threshold: grant.living_wage_threshold,
+    comparison_income: grant.comparison_income_avg,
+    post_intervention_income: grant.post_intervention_income_avg,
+    income_change_avg: grant.intervention_income_change_avg,
+    income_change_pct: grant.pct_change_in_annual_income,
+    undiscounted_lifetime_income: grant.undiscounted_aggregate_lifetime_income,
+    pv_lifetime_income_gain: grant.present_value_lifetime_income_gain,
+    roi: grant.roi_lifetime_income_gain,
+    relative_roi_dil: grant.relative_roi_dil,
+    lifetime_earnings_per_person: grant.lifetime_earnings_increase_per_person,
+    undiscounted_earnings_per_person: grant.undiscounted_lifetime_earnings_increase_per_person,
+    dil_equivalent: grant.number_dil_equivalent,
+    dil_per_dollar: grant.number_dil_people_per_dollar,
+    roi_or_dil_project: grant.roi_or_dil_project,
+    outcome_data_type: grant.type_of_outcome_data,
+    counterfactual_type: grant.type_of_counterfactual_data,
+    evidence_quality: grant.evidence_quality_assessment,
+    execution_risk: grant.execution_risk,
+
+    // Demographics
+    leadership_gender: grant.leadership_gender,
+    leadership_ethnicity: grant.leadership_ethnicity,
+    leadership_ethnicity_short: grant.leadership_ethnicity_collapsed,
+    women_impacted_pct: grant.women_impacted_percent,
+    marginalized_pct: grant.historically_marginalized_percent,
+    immigrants_refugees: grant.immigrants_or_refugees,
+    justice_involved: grant.justice_involved,
+    lgbtq: grant.lgbtq,
   };
 }
 

@@ -71,8 +71,11 @@ export interface GrantRecord {
   lgbtq: string;
 }
 
-// Condensed version for the grant registry included in every chat request
+// Condensed version for the grant registry included in every chat request.
+// Uses abbreviated keys to minimize token usage while giving Claude full
+// access to all spreadsheet columns so users can ask any data question.
 export interface CondensedGrant {
+  // Identity & Classification
   ref: string;
   name: string;
   title: string;
@@ -81,17 +84,66 @@ export interface CondensedGrant {
   rfp: string;
   portfolio_type: string;
   intervention: string;
+  intervention_2: string;
   impact_pathway: string;
   labor_market_sector: string;
   project_mechanism: string;
   population: string;
-  amount: number | null;
-  people_served: number | null;
-  roi: number | null;
-  income_change_pct: number | null;
-  cost_per_person: number | null;
-  active: boolean;
+  strategic_alignment: string;
   program_officer: string;
+
+  // Financial
+  amount: number | null;
+  total_investment: number | null;
+  total_committed: number | null;
+  co_investment: number | null;
+  cost_per_person: number | null;
+
+  // Timeline & Status
+  approval_date: string | null;
+  start_date: string | null;
+  close_date: string | null;
+  grant_years: number | null;
+  fiscal_year: number | null;
+  quarter: string;
+  fy_quarter: string;
+  active: boolean;
+
+  // Impact & ROI
+  people_served: number | null;
+  original_est_people: number | null;
+  pct_below_living_wage: number | null;
+  people_below_living_wage: number | null;
+  pct_above_living_wage: number | null;
+  people_above_living_wage: number | null;
+  living_wage_threshold: number | null;
+  comparison_income: number | null;
+  post_intervention_income: number | null;
+  income_change_avg: number | null;
+  income_change_pct: number | null;
+  undiscounted_lifetime_income: number | null;
+  pv_lifetime_income_gain: number | null;
+  roi: number | null;
+  relative_roi_dil: number | null;
+  lifetime_earnings_per_person: number | null;
+  undiscounted_earnings_per_person: number | null;
+  dil_equivalent: number | null;
+  dil_per_dollar: number | null;
+  roi_or_dil_project: string;
+  outcome_data_type: string;
+  counterfactual_type: string;
+  evidence_quality: string;
+  execution_risk: string;
+
+  // Demographics
+  leadership_gender: string;
+  leadership_ethnicity: string;
+  leadership_ethnicity_short: string;
+  women_impacted_pct: number | null;
+  marginalized_pct: number | null;
+  immigrants_refugees: string;
+  justice_involved: string;
+  lgbtq: string;
 }
 
 export interface PortfolioSummary {
