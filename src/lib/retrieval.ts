@@ -47,7 +47,7 @@ export async function retrieveContext(
   const results = await searchChunks(
     query,
     hasFilters ? filters : undefined,
-    options?.topK ?? 10
+    options?.topK ?? 20
   );
 
   const chunks = results.map((r) => r.chunk);

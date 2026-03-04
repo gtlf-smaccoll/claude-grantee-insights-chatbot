@@ -118,6 +118,7 @@ export async function POST(req: Request) {
       model: anthropic("claude-sonnet-4-20250514"),
       system: systemPrompt,
       messages: modelMessages,
+      maxOutputTokens: 4096,
     });
 
     return result.toUIMessageStreamResponse();
